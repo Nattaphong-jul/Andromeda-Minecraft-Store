@@ -1,0 +1,152 @@
+> Create a Fabric mod for Minecraft 26.1.2 using Fabric API 0.149.0+26.1.2. The mod is called **Andromeda Economy** (`andromeda-economy`). It must be **server-side only** — clients need no additional mods installed.
+>
+> ---
+>
+> ### Build Setup
+> - Use Gradle with the `com.github.johnrengelman.shadow` plugin to bundle all dependencies into a single fat `.jar`
+> - Bundle **SQLite JDBC** (`org.xerial:sqlite-jdbc:3.45.1.0`) via `shadowJar`
+> - Output jar name: `andromeda-economy-1.0.0+26.1.2.jar`
+>
+> ---
+>
+> ### Data Storage
+> - Use **SQLite** for player data with two tables:
+>   - `players (uuid TEXT PRIMARY KEY, username TEXT, balance REAL, kills INTEGER)`
+> - On first server start, auto-discover all registered items from `Registries.ITEM` and generate `config/andromeda-economy/prices.json` if it doesn't exist
+> - Each item entry in `prices.json`:
+>   ```json
+>   {
+>     "minecraft:diamond": {
+>       "price": 100000.0,
+>       "tags": ["diamond", "gem", "epic"]
+>     }
+>   }
+>   ```
+> - Auto-assign default prices using these hardcoded anchor points and tiers:
+>
+>   **Hardcoded anchor prices:**
+>   | Item | THB |
+>   |------|-----|
+>   | minecraft:dirt | 1 |
+>   | minecraft:coal | 500 |
+>   | minecraft:iron_ingot | 2,000 |
+>   | minecraft:gold_ingot | 15,000 |
+>   | minecraft:diamond | 100,000 |
+>   | minecraft:emerald | 80,000 |
+>   | minecraft:netherite_ingot | 1,000,000 |
+>   | minecraft:ancient_debris | 500,000 |
+>   | minecraft:elytra | 2,000,000 |
+>   | minecraft:dragon_egg | 50,000,000 |
+>
+>   **Tier fallbacks for everything else:**
+>   | Tier | Examples | THB Range |
+>   |------|----------|-----------|
+>   | Junk | Gravel, Sand, Flint | 1 – 10 |
+>   | Common | Wood, Stone, Leather | 50 – 200 |
+>   | Uncommon | Copper, Lapis | 500 – 2,000 |
+>   | Rare | Redstone, Quartz | 5,000 – 20,000 |
+>   | Epic | Diamond-tier tools/armor | 80,000 – 100,000 |
+>   | Legendary | Netherite tools/armor | 500,000 – 1,000,000 |
+>   | Unknown/Modded fallback | — | 1,000 |
+>
+> - Auto-generate tags from the item's registry name by splitting on `_` (e.g. `blue_concrete_powder` → tags `["blue", "concrete", "powder", "block"]`)
+> - Also generate `config/andromeda-economy/mob_rewards.json` on first start with default mob kill rewards in THB scaled to mob difficulty:
+>
+>   | Mob | THB |
+>   |-----|-----|
+>   | Zombie, Skeleton, Spider | 100 |
+>   | Creeper, Witch | 500 |
+>   | Enderman | 1,000 |
+>   | Blaze, Wither Skeleton | 2,000 |
+>   | Elder Guardian | 10,000 |
+>   | Wither | 100,000 |
+>   | Ender Dragon | 500,000 |
+>   | Unknown mobs | 50 |
+>
+> ---
+>
+> ### Commands
+>
+> **`/shop [search term]`**
+> - Opens a **54-slot chest GUI** (chest title: "Andromeda Shop")
+> - If no argument: show all items paginated, sorted alphabetically
+> - If argument given (e.g. `/shop diamond`):
+>   1. First filter items whose display name **contains** the search string (case-insensitive)
+>   2. If no results, fall back to **tag search** — show items whose tag list contains any word from the search string
+>   3. Example: `/shop blue block` → matches Blue Concrete, Blue Terracotta, Lapis Block, etc.
+> - Layout per page (54 slots):
+>   - Slots 0–44: item listings (45 items max per page)
+>   - Slot 45: Previous page arrow (Arrow item, gray if on first page)
+>   - Slot 46: empty
+>   - Slot 47: empty
+>   - Slot 48: Search (Sign item, named "🔍 Search", clicking opens a chat prompt asking player to type search term)
+>   - Slot 49: empty
+>   - Slot 50: empty
+>   - Slot 51: empty
+>   - Slot 52: Next page arrow (Arrow item, gray if on last page)
+>   - Slot 53: empty
+> - Each item in the shop shows in its lore:
+>   ```
+>   Buy: 100,000.00 THB
+>   Sell: 85,000.00 THB
+>   ```
+> - Clicking an item opens a **quantity selector GUI** (how many to buy: 1, 8, 16, 32, 64)
+> - Buying deducts THB from player balance and gives them the item
+> - If player can't afford it, send red chat message: `"Insufficient balance."`
+>
+> **`/sell`**
+> - Opens a **27-slot chest GUI** (chest title: "Sell Items")
+> - Top 18 slots: sell area where player places items
+> - Bottom row middle slot (slot 22): Green Dye named **"✔ Confirm Sale"**
+> - On confirm: calculate total value of all items placed (each at 85% of `prices.json` price), add to player balance, clear the sell slots, send green chat message:
+>   `"Sold items for X,XXX.XX THB"`
+> - Items not in `prices.json` show lore: `"No sell value"` and are ignored in the total
+>
+> **`/pay <player> <amount>`**
+> - Transfer THB from sender to target player
+> - Validate: amount > 0, sender has enough balance, target player exists
+> - Send confirmation to both players in chat
+>
+> **`/balance [player]`**
+> - If no argument: show own balance
+> - If argument: show target player's balance (any player can look up anyone)
+> - Format: `"Balance: 1,234,567.89 THB"`
+>
+> ---
+>
+> ### HUD — Sidebar Scoreboard
+> - Show a sidebar scoreboard to every online player, updated in real time
+> - Format:
+>   ```
+>   § Andromeda
+>   ————————
+>   💰 1,234,567.89 THB
+>   ⚔ Kills: 12
+>   ```
+> - Updates immediately when balance or kills change
+> - Use the vanilla scoreboard/sidebar packet — no client mod required
+>
+> ---
+>
+> ### Mob Kill Rewards
+> - Listen to `ServerLivingEntityEvents.AFTER_DEATH`
+> - If the killer is a player, look up the mob's registry name in `mob_rewards.json`
+> - Add the reward THB to the player's balance
+> - Send chat message: `"You earned X,XXX.XX THB for killing [Mob Name]"`
+> - If mob not in `mob_rewards.json`, give 50 THB fallback reward with message:
+>   `"You earned 50.00 THB for killing [Mob Name]"`
+>
+> ---
+>
+> ### General Requirements
+> - All monetary values formatted to 2 decimal places with comma separators (e.g. `1,000,000.00 THB`)
+> - Currency label is always **THB**
+> - New players start with **0.00 THB** and **0 kills**
+> - Player data is created on first join (`PlayerJoinCallback`)
+> - All GUIs must use vanilla chest/inventory packets only — no client mod required
+> - Code should be clean, separated into packages: `command`, `gui`, `data`, `hud`
+> - Include a `fabric.mod.json` with mod id `andromeda_economy`, name `Andromeda Economy`, version `1.0.0`
+
+---
+
+That's the full prompt ready to paste into Claude Code. Once it generates the project just run `./gradlew shadowJar` and your single jar will be in `build/libs/`. Good luck with Andromeda! 🍩

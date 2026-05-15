@@ -1,0 +1,57 @@
+plugins {
+    // MC 26.1 requires loom 1.15+ and the full plugin ID
+    id 'net.fabricmc.fabric-loom' version '1.15-SNAPSHOT'
+    id 'com.gradleup.shadow' version '8.3.6'
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    shade
+    implementation.extendsFrom shade
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // No mappings line — game is already using official Mojang names in 26.1
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    shade('org.xerial:sqlite-jdbc:3.45.1.0') { transitive = false }
+}
+
+shadowJar {
+    configurations = [project.configurations.shade]
+    archiveFileName = "andromeda-economy-${project.mod_version}+${project.minecraft_version}.jar"
+    mergeServiceFiles()
+}
+
+// In 26.1 there is no remapping step — shadowJar IS the final jar
+build.dependsOn shadowJar
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}

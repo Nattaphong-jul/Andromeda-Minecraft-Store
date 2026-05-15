@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "andromeda_economy",
+  "version": "${version}",
+  "name": "Andromeda Economy",
+  "description": "Server-side economy mod with shop, sell, and player balance systems.",
+  "authors": [],
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.andromeda.economy.AndromedaEconomy"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~26.1"
+  }
+}
