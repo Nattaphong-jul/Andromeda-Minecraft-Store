@@ -12,11 +12,8 @@ import net.minecraft.world.effect.MobEffects;
 public class NightVisionCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        var node = dispatcher.register(Commands.literal("nightvision")
-            .executes(ctx -> toggle(ctx.getSource()))
-        );
-        // /nv is a short alias for /nightvision
-        dispatcher.register(Commands.literal("nv").redirect(node));
+        dispatcher.register(Commands.literal("nightvision").executes(ctx -> toggle(ctx.getSource())));
+        dispatcher.register(Commands.literal("nv").executes(ctx -> toggle(ctx.getSource())));
     }
 
     private static int toggle(CommandSourceStack source) {

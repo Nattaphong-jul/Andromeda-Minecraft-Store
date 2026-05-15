@@ -1,0 +1,23 @@
+# Gradle build output
+build/
+.gradle/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Generated config (server runtime files — not part of source)
+run/
