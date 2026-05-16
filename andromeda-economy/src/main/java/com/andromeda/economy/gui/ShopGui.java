@@ -22,6 +22,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -101,6 +103,10 @@ public class ShopGui extends ChestMenu {
         stack.set(DataComponents.LORE, new ItemLore(List.of(
             Component.literal(EconomyUtils.compact(entry.price) + " THB").withStyle(ChatFormatting.GREEN)
         )));
+        // Mark as a shop display item so the client Mixin skips injecting sell price
+        CompoundTag tag = new CompoundTag();
+        tag.putBoolean("ae_shop", true);
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         return stack;
     }
 

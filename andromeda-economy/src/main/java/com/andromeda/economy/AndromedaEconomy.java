@@ -135,10 +135,13 @@ public class AndromedaEconomy implements ModInitializer {
                     hud.updatePingOnly(player);
                 }
             }
-            // Only update lore for players WITHOUT the client mod
             if (tick % 100 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    if (!CLIENT_MOD_PLAYERS.contains(player.getUUID())) {
+                    if (CLIENT_MOD_PLAYERS.contains(player.getUUID())) {
+                        // Keep inventory clean for client-mod players so picked-up items
+                        // with leftover price lore get cleared within 5 s
+                        stripPriceLore(player);
+                    } else {
                         updateInventoryPrices(player);
                     }
                 }
@@ -168,7 +171,7 @@ public class AndromedaEconomy implements ModInitializer {
      * We identify our lore by checking for "THB" in the first lore line
      * (all our lore ends with "THB x1").
      */
-    private static void stripPriceLore(ServerPlayer player) {
+    public static void stripPriceLore(ServerPlayer player) {
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack stack = inv.getItem(i);
