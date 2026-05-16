@@ -40,6 +40,11 @@ public class ItemStackTooltipMixin {
         if (!PriceCache.isLoaded()) return;
 
         ItemStack self = (ItemStack) (Object) this;
+
+        // Items with existing lore are shop display items (buy price already set by the server).
+        // Only inject the sell price on clean inventory items that have no lore.
+        if (self.has(net.minecraft.core.component.DataComponents.LORE)) return;
+
         Identifier id = BuiltInRegistries.ITEM.getKey(self.getItem());
         if (id == null) return;
 
