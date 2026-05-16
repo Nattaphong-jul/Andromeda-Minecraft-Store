@@ -54,8 +54,8 @@ public class ItemStackTooltipMixin {
         int count = self.getCount();
         double total = sellPrice * count;
 
-        // Show total sell value — no count suffix, the price itself reflects the stack size
+        // Insert sell price directly under the item name (index 0), same position as in the shop
         List<Component> lines = cir.getReturnValue();
-        lines.add(Component.literal(EconomyUtils.compact(total) + " THB").withStyle(ChatFormatting.GREEN));
+        lines.add(1, Component.literal(EconomyUtils.compact(total) + " THB").withStyle(ChatFormatting.GREEN));
     }
 }
