@@ -214,15 +214,13 @@ public class AndromedaEconomy implements ModInitializer {
             double sellPrice = prices.getSellPrice(id.toString());
             if (sellPrice <= 0) continue;
 
-            String priceStr = EconomyUtils.compact(sellPrice) + " THB ";
-            String lorePlain = priceStr + "x1";
+            String loreText = EconomyUtils.compact(sellPrice) + " THB";
             ItemLore existing = stack.get(DataComponents.LORE);
             if (existing != null && !existing.lines().isEmpty()
-                    && existing.lines().get(0).getString().equals(lorePlain)) continue;
+                    && existing.lines().get(0).getString().equals(loreText)) continue;
 
             stack.set(DataComponents.LORE, new ItemLore(List.of(
-                Component.literal(priceStr).withStyle(ChatFormatting.GREEN)
-                    .append(Component.literal("x1").withStyle(ChatFormatting.WHITE))
+                Component.literal(loreText).withStyle(ChatFormatting.GREEN)
             )));
         }
     }
