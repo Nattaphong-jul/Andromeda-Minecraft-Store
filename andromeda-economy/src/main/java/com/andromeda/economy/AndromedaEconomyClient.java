@@ -7,7 +7,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 
 /**
  * Client-side entrypoint — only runs when the mod is installed on the client.
@@ -23,16 +22,16 @@ public class AndromedaEconomyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Register the S2C payload type so the channel is announced to the server on join.
-        // This is what ServerPlayNetworking.canSend() checks — if this registration exists
-        // on the client, the server knows the client has the mod and can send prices.
-        PayloadTypeRegistry.clientboundPlay().register(PriceMapPayload.TYPE, PriceMapPayload.CODEC);
+        // NOTE: PayloadTypeRegistry.clientboundPlay().register() is intentionally called
+        // only in AndromedaEconomy.onInitialize() (the common/main entrypoint).
+        // That entrypoint runs on both client and server, so the codec is registered once.
+        // Registering it here too would double-register and crash on client launch.
 
         // Handle incoming price maps from the server
         ClientPlayNetworking.registerGlobalReceiver(PriceMapPayload.TYPE, (payload, context) ->
             PriceCache.update(payload.prices()));
 
-        // Clear cache when disconnecting so stale data isn't used on the next server
+        // Clear cache on disconnect so stale prices aren't shown on the next server
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> PriceCache.clear());
     }
 }
