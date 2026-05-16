@@ -3,14 +3,20 @@
   "id": "andromeda_economy",
   "version": "${version}",
   "name": "Andromeda Economy",
-  "description": "Server-side economy mod with shop, sell, and player balance systems.",
+  "description": "Economy mod — works server-side only; install on client too for enhanced price tooltips and perfect item stacking.",
   "authors": [],
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": [
       "com.andromeda.economy.AndromedaEconomy"
+    ],
+    "client": [
+      "com.andromeda.economy.AndromedaEconomyClient"
     ]
   },
+  "mixins": [
+    "andromeda_economy.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "fabric-api": "*",

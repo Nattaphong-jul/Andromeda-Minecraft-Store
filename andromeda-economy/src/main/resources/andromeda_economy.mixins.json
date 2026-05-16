@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.andromeda.economy.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ItemStackTooltipMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
