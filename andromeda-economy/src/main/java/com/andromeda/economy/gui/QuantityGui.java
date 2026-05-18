@@ -81,6 +81,7 @@ public class QuantityGui extends ChestMenu {
             Component.literal("Price: " + EconomyUtils.compact(entry.price) + " THB each")
                 .withStyle(ChatFormatting.GREEN)
         )));
+        ShopGui.markDisplay(preview); // prevent Mixin from injecting a second price
         inv.setItem(SLOT_PREVIEW, preview);
 
         // Quantity buttons — actual item icons with stack-count badge
@@ -92,6 +93,7 @@ public class QuantityGui extends ChestMenu {
                 Component.literal("Price: " + EconomyUtils.compact(entry.price * qty) + " THB")
                     .withStyle(ChatFormatting.GREEN)
             )));
+            ShopGui.markDisplay(btn); // prevent Mixin from injecting a second price
             inv.setItem(QTY_SLOTS[i], btn);
         }
 

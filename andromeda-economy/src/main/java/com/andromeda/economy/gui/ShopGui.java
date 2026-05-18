@@ -188,6 +188,18 @@ public class ShopGui extends ChestMenu {
         return EconomyUtils.toDisplayName(shopId);
     }
 
+    /**
+     * Tags a GUI display item with the ae_shop CustomData flag so the client
+     * tooltip Mixin skips injecting a sell price on top of the existing lore.
+     * Safe to call on any temporary display item — players cannot take these
+     * out of the GUI, so the flag never reaches the player's real inventory.
+     */
+    static void markDisplay(ItemStack stack) {
+        CompoundTag tag = new CompoundTag();
+        tag.putBoolean("ae_shop", true);
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
     /** Returns the matching Item for potion shop prefixes, or null if not a potion. */
     private static net.minecraft.world.item.Item potionItemFor(String shopId) {
         if (shopId.startsWith("lingering_potion:")) return Items.LINGERING_POTION;
