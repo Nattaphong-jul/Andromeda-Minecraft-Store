@@ -95,10 +95,10 @@ public class QuantityGui extends ChestMenu {
             inv.setItem(QTY_SLOTS[i], btn);
         }
 
-        // Cancel button
+        // Close button
         ItemStack cancel = new ItemStack(Items.BARRIER);
         cancel.set(DataComponents.CUSTOM_NAME,
-            Component.literal("Cancel").withStyle(ChatFormatting.RED));
+            Component.literal("Close").withStyle(ChatFormatting.RED));
         inv.setItem(SLOT_CANCEL, cancel);
     }
 
@@ -153,9 +153,9 @@ public class QuantityGui extends ChestMenu {
             + " for " + EconomyUtils.format(cost) + " THB"
         ).withStyle(ChatFormatting.GREEN));
 
-        AndromedaEconomy.playMoneySound(sp); // XP sound on purchase too
-        sp.closeContainer();
+        AndromedaEconomy.playMoneySound(sp);
         AndromedaEconomy.hud.update(sp);
+        // Stay in the GUI so the player can buy more without reopening the shop
     }
 
     @Override
