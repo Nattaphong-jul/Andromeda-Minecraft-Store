@@ -35,8 +35,8 @@ public class PriceManager {
         m.put("minecraft:coal",              500.0);
         m.put("minecraft:copper_ingot",      800.0);
         m.put("minecraft:iron_ingot",        2_000.0);
-        m.put("minecraft:gold_ingot",        15_000.0);
-        m.put("minecraft:gold_nugget",       1_700.0);   // ≈ ingot/9
+        m.put("minecraft:gold_ingot",        60_000.0);
+        m.put("minecraft:gold_nugget",        6_700.0);   // ≈ ingot/9
         m.put("minecraft:lapis_lazuli",      3_000.0);
         m.put("minecraft:redstone",          1_000.0);
         m.put("minecraft:quartz",            900.0);
@@ -51,13 +51,13 @@ public class PriceManager {
         m.put("minecraft:dragon_egg",        50_000_000.0);
         // ── Raw (pre-smelt) materials ────────────────────────────────────────
         m.put("minecraft:raw_iron",          1_600.0);
-        m.put("minecraft:raw_gold",          12_000.0);
+        m.put("minecraft:raw_gold",          60_000.0);
         m.put("minecraft:raw_copper",        640.0);
         // ── Material blocks (9× ingot, quartz 4×, amethyst 9×) ──────────────
         m.put("minecraft:coal_block",        4_500.0);
         m.put("minecraft:copper_block",      7_200.0);
         m.put("minecraft:iron_block",        18_000.0);
-        m.put("minecraft:gold_block",        135_000.0);
+        m.put("minecraft:gold_block",        540_000.0);
         m.put("minecraft:lapis_block",       27_000.0);
         m.put("minecraft:redstone_block",    9_000.0);
         m.put("minecraft:quartz_block",      3_600.0);   // 4 quartz per block
@@ -72,9 +72,9 @@ public class PriceManager {
         m.put("minecraft:deepslate_copper_ore",    760.0);
         m.put("minecraft:iron_ore",                1_800.0);
         m.put("minecraft:deepslate_iron_ore",      1_900.0);
-        m.put("minecraft:gold_ore",                13_500.0);
-        m.put("minecraft:deepslate_gold_ore",      14_000.0);
-        m.put("minecraft:nether_gold_ore",         5_000.0);
+        m.put("minecraft:gold_ore",                60_000.0);
+        m.put("minecraft:deepslate_gold_ore",      63_000.0);
+        m.put("minecraft:nether_gold_ore",        24_000.0);
         m.put("minecraft:lapis_ore",               5_000.0);
         m.put("minecraft:deepslate_lapis_ore",     5_500.0);
         m.put("minecraft:redstone_ore",            3_000.0);
@@ -110,6 +110,7 @@ public class PriceManager {
         m.put("minecraft:nautilus_shell",          100_000.0);
         m.put("minecraft:heart_of_the_sea",        500_000.0);
         m.put("minecraft:trident",                 1_000_000.0);
+        m.put("minecraft:mace",                    2_000_000.0);
         m.put("minecraft:totem_of_undying",          100_000.0);
         m.put("minecraft:nether_star",             5_000_000.0);
         // ── Misc / commonly misclassified ────────────────────────────────────
@@ -170,8 +171,7 @@ public class PriceManager {
         m.put("minecraft:music_disc_creator",    500_000.0);
         m.put("minecraft:music_disc_creator_music_box", 500_000.0);
         m.put("minecraft:music_disc_precipice",  500_000.0);
-        // ── Fireworks ────────────────────────────────────────────────────────
-        m.put("minecraft:firework_rocket",         2_000.0);
+        // firework_rocket handled by duration variants below; firework_star stays
         m.put("minecraft:firework_star",           1_000.0);
         // ── Logs (fixed at 2 K to prevent plank-arbitrage) ──────────────────
         // All overworld log variants
@@ -199,7 +199,8 @@ public class PriceManager {
         "minecraft:structure_void", "minecraft:jigsaw", "minecraft:light",
         "minecraft:debug_stick", "minecraft:knowledge_book",
         "minecraft:petrified_oak_slab", "minecraft:moving_piston",
-        "minecraft:bundle"  // unobtainable in survival in most versions
+        "minecraft:bundle",           // unobtainable in survival in most versions
+        "minecraft:firework_rocket"   // replaced by duration-specific shop entries
     );
 
     private final Map<String, PriceEntry> prices = new LinkedHashMap<>();
@@ -220,6 +221,11 @@ public class PriceManager {
             List<String> tags = buildTags(id);
             addEntry(root, key, price, tags);
         }
+        // Firework rockets with explicit flight durations (1 = short, 3 = elytra-boost)
+        addEntry(root, "firework_rocket:1",  2_000.0,  List.of("firework", "rocket", "duration", "1"));
+        addEntry(root, "firework_rocket:2",  5_000.0,  List.of("firework", "rocket", "duration", "2"));
+        addEntry(root, "firework_rocket:3", 10_000.0,  List.of("firework", "rocket", "duration", "3"));
+
         try (Writer w = new FileWriter(FILE)) { GSON.toJson(root, w); }
         catch (IOException e) { AndromedaEconomy.LOGGER.error("Failed to write prices.json", e); }
     }
@@ -422,7 +428,26 @@ public class PriceManager {
 
     public double getSellPrice(String itemId) {
         double buy = getBuyPrice(itemId);
-        return buy > 0 ? buy * 0.85 : -1;
+        return buy > 0 ? buy : -1;   // sell price == buy price (no discount)
+    }
+
+    /** Called by GoldPriceService to push live market prices for all gold items. */
+    public void updateGoldPrice(double goldIngot) {
+        double nugget = Math.round(goldIngot / 9.0);
+        double block  = goldIngot * 9;
+        updatePrice("minecraft:gold_ingot",           goldIngot);
+        updatePrice("minecraft:gold_nugget",          nugget);
+        updatePrice("minecraft:gold_block",           block);
+        updatePrice("minecraft:raw_gold",             goldIngot);      // 1:1 smelts to ingot
+        updatePrice("minecraft:gold_ore",             goldIngot);
+        updatePrice("minecraft:deepslate_gold_ore",   goldIngot * 1.05);
+        updatePrice("minecraft:nether_gold_ore",      goldIngot * 0.4); // drops nuggets
+    }
+
+    private void updatePrice(String key, double price) {
+        PriceEntry old = prices.get(key);
+        List<String> tags = old != null ? old.tags : buildTags(Identifier.parse(key));
+        prices.put(key, new PriceEntry(price, tags));
     }
 
     /** Returns a search-friendly display name for any shopId. */

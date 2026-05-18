@@ -25,6 +25,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
@@ -142,6 +143,13 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
+        // Firework rockets with specific flight durations: "firework_rocket:N"
+        if (shopId.startsWith("firework_rocket:")) {
+            int duration = Integer.parseInt(shopId.substring("firework_rocket:".length()));
+            ItemStack rocket = new ItemStack(Items.FIREWORK_ROCKET, count);
+            rocket.set(DataComponents.FIREWORKS, new Fireworks(duration, List.of()));
+            return rocket;
+        }
         Item item = BuiltInRegistries.ITEM.get(Identifier.parse(shopId)).orElseThrow().value();
         return new ItemStack(item, count);
     }
@@ -172,6 +180,10 @@ public class ShopGui extends ChestMenu {
                     return dummy.getHoverName().getString();
                 }
             }
+        }
+        if (shopId.startsWith("firework_rocket:")) {
+            int dur = Integer.parseInt(shopId.substring("firework_rocket:".length()));
+            return "Firework Rocket (Duration " + dur + ")";
         }
         return EconomyUtils.toDisplayName(shopId);
     }
