@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.fabricmc.fabric.api.networking.v1.ClientboundPlayChannelEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -89,19 +90,22 @@ public class AndromedaEconomy implements ModInitializer {
             ServerPlayer player = handler.player;
             db.ensurePlayer(player.getStringUUID(), player.getGameProfile().name());
             hud.update(player);
+            // canSend() is NOT reliable here — channel negotiation happens after JOIN fires.
+            // We detect the client mod via ClientboundPlayChannelEvents.REGISTER below.
+            // For now just run the server-side fallback; it will be undone if client mod present.
+            updateInventoryPrices(player);
+        });
 
-            // Check if this client also has the mod installed.
-            // When AndromedaEconomyClient registers the PriceMapPayload receiver,
-            // Fabric announces that channel to the server during the join handshake —
-            // so canSend() is reliable here.
-            if (ServerPlayNetworking.canSend(player, PriceMapPayload.TYPE)) {
-                CLIENT_MOD_PLAYERS.add(player.getUUID());
-                sendPriceMap(player);     // push price data to client
-                stripPriceLore(player);   // remove any existing NBT lore so items stack cleanly
-                LOGGER.debug("Client mod detected for {}", player.getGameProfile().name());
-            } else {
-                updateInventoryPrices(player);
-            }
+        // Fires on the SERVER when the CLIENT sends its channel-registration packet.
+        // This is the reliable moment to know the client has the mod installed.
+        ClientboundPlayChannelEvents.REGISTER.register((handler, packetSender, server, channels) -> {
+            if (!channels.contains(PriceMapPayload.TYPE.id())) return;
+            ServerPlayer player = handler.player;
+            CLIENT_MOD_PLAYERS.add(player.getUUID());
+            // Undo the lore that updateInventoryPrices may have just added, then send prices
+            stripPriceLore(player);
+            sendPriceMap(player);
+            LOGGER.debug("Client mod detected for {} — switched to tooltip mode", player.getGameProfile().name());
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {

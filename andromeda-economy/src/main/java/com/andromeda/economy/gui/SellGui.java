@@ -23,30 +23,29 @@ import net.minecraft.world.item.component.ItemLore;
 import java.util.List;
 
 /**
- * 27-slot sell GUI.
+ * 54-slot (large chest) sell GUI.
  *
- * Slots 0–17 : sell area (player places items freely)
- * Slots 18–25: empty, all interaction blocked
- * Slot 26    : ✔ Confirm Sale (Green Dye) — bottom-right corner
+ * Slots 0–44  : sell area — 5 full rows, player places items here freely
+ * Slots 45–52 : glass padding (bottom row)
+ * Slot  53    : ✔ Confirm Sale (Green Dye) — bottom-right corner
  */
 public class SellGui extends ChestMenu {
 
-    private static final int SELL_SLOTS   = 18;
-    private static final int SLOT_CONFIRM = 26;
+    private static final int SELL_SLOTS   = 45;   // 5 rows × 9
+    private static final int SLOT_CONFIRM = 53;   // last slot in 54-slot chest
 
     private final SimpleContainer inv;
 
     private SellGui(int syncId, Inventory playerInv, SimpleContainer inv, ServerPlayer player) {
-        super(MenuType.GENERIC_9x3, syncId, playerInv, inv, 3);
+        super(MenuType.GENERIC_9x6, syncId, playerInv, inv, 6);
         this.inv = inv;
-        // Fill slots 18-25 with glass so the blocked area is visually clear
         ItemStack pad = glass();
         for (int i = SELL_SLOTS; i < SLOT_CONFIRM; i++) inv.setItem(i, pad.copy());
         inv.setItem(SLOT_CONFIRM, makeConfirm());
     }
 
     public static void open(ServerPlayer player) {
-        SimpleContainer inv = new SimpleContainer(27);
+        SimpleContainer inv = new SimpleContainer(54);
         player.openMenu(new SimpleMenuProvider(
             (syncId, playerInv, p) -> new SellGui(syncId, playerInv, inv, player),
             Component.literal("Sell Items")
@@ -69,12 +68,10 @@ public class SellGui extends ChestMenu {
     @Override
     public void clicked(int slotId, int button, ContainerInput type, Player clicker) {
         if (!(clicker instanceof ServerPlayer sp)) return;
-
-        if (slotId >= SELL_SLOTS && slotId < 27) {
+        if (slotId >= SELL_SLOTS && slotId < 54) {
             if (slotId == SLOT_CONFIRM) processSale(sp);
-            return; // block all other bottom-row clicks
+            return;
         }
-
         super.clicked(slotId, button, type, clicker);
     }
 
@@ -129,10 +126,10 @@ public class SellGui extends ChestMenu {
     public boolean stillValid(Player player) { return true; }
 
     /**
-     * Shift-click behaviour:
-     *   Sell area (0-17)        -> move to player inventory/hotbar (27-62)
-     *   Player inventory (27-62) -> move to sell area (0-17)
-     *   Bottom row (18-26)       -> blocked
+     * Shift-click routing:
+     *   Sell area (0–44)         → player inventory/hotbar (54–89)
+     *   Player inventory (54–89) → sell area (0–44)
+     *   Bottom row (45–53)       → blocked
      */
     @Override
     public ItemStack quickMoveStack(Player player, int slot) {
@@ -143,13 +140,11 @@ public class SellGui extends ChestMenu {
         ItemStack original = stack.copy();
 
         if (slot < SELL_SLOTS) {
-            // Sell area -> player inventory + hotbar
-            if (!this.moveItemStackTo(stack, 27, 63, true)) return ItemStack.EMPTY;
-        } else if (slot >= 27) {
-            // Player inventory -> sell area only
+            if (!this.moveItemStackTo(stack, 54, 90, true)) return ItemStack.EMPTY;
+        } else if (slot >= 54) {
             if (!this.moveItemStackTo(stack, 0, SELL_SLOTS, false)) return ItemStack.EMPTY;
         } else {
-            return ItemStack.EMPTY; // bottom row
+            return ItemStack.EMPTY;
         }
 
         if (stack.isEmpty()) slotObj.set(ItemStack.EMPTY);

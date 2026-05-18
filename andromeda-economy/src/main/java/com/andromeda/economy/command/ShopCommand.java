@@ -9,13 +9,13 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class ShopCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        var shopNode = dispatcher.register(Commands.literal("shop")
-            .executes(ctx -> open(ctx.getSource(), ""))
-            .then(Commands.argument("search", StringArgumentType.greedyString())
-                .executes(ctx -> open(ctx.getSource(), StringArgumentType.getString(ctx, "search"))))
-        );
-        // /sh is an alias for /shop
-        dispatcher.register(Commands.literal("sh").redirect(shopNode));
+        for (String name : new String[]{"shop", "sh"}) {
+            dispatcher.register(Commands.literal(name)
+                .executes(ctx -> open(ctx.getSource(), ""))
+                .then(Commands.argument("search", StringArgumentType.greedyString())
+                    .executes(ctx -> open(ctx.getSource(), StringArgumentType.getString(ctx, "search"))))
+            );
+        }
     }
 
     private static int open(CommandSourceStack source, String search) {
