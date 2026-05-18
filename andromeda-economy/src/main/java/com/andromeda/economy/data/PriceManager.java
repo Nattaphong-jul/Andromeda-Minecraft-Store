@@ -426,9 +426,17 @@ public class PriceManager {
         return e != null ? e.price : -1;
     }
 
+    /** Gold items sell at full buy price; everything else sells at 85%. */
+    private static final Set<String> NO_DISCOUNT = Set.of(
+        "minecraft:gold_ingot", "minecraft:gold_block", "minecraft:gold_nugget",
+        "minecraft:raw_gold", "minecraft:gold_ore",
+        "minecraft:deepslate_gold_ore", "minecraft:nether_gold_ore"
+    );
+
     public double getSellPrice(String itemId) {
         double buy = getBuyPrice(itemId);
-        return buy > 0 ? buy : -1;   // sell price == buy price (no discount)
+        if (buy <= 0) return -1;
+        return NO_DISCOUNT.contains(itemId) ? buy : buy * 0.85;
     }
 
     /** Called by GoldPriceService to push live market prices for all gold items. */
