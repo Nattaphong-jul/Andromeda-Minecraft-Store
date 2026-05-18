@@ -19,17 +19,42 @@ public class MobRewardManager {
 
     private static final Map<String, Double> DEFAULTS = new LinkedHashMap<>();
     static {
-        DEFAULTS.put("minecraft:zombie",          100.0);
-        DEFAULTS.put("minecraft:skeleton",        100.0);
-        DEFAULTS.put("minecraft:spider",          100.0);
-        DEFAULTS.put("minecraft:creeper",         500.0);
-        DEFAULTS.put("minecraft:witch",           500.0);
-        DEFAULTS.put("minecraft:enderman",        1_000.0);
-        DEFAULTS.put("minecraft:blaze",           2_000.0);
-        DEFAULTS.put("minecraft:wither_skeleton", 2_000.0);
-        DEFAULTS.put("minecraft:elder_guardian",  10_000.0);
-        DEFAULTS.put("minecraft:wither",          100_000.0);
-        DEFAULTS.put("minecraft:ender_dragon",    500_000.0);
+        // ── Common overworld ─────────────────────────────────────────────────
+        DEFAULTS.put("minecraft:zombie",            1_000.0);
+        DEFAULTS.put("minecraft:husk",              1_000.0);
+        DEFAULTS.put("minecraft:drowned",           1_500.0);
+        DEFAULTS.put("minecraft:skeleton",          1_000.0);
+        DEFAULTS.put("minecraft:stray",             1_000.0);
+        DEFAULTS.put("minecraft:spider",            1_000.0);
+        DEFAULTS.put("minecraft:cave_spider",       2_000.0);
+        DEFAULTS.put("minecraft:creeper",           2_500.0);
+        DEFAULTS.put("minecraft:witch",             2_500.0);
+        DEFAULTS.put("minecraft:slime",             1_000.0);
+        DEFAULTS.put("minecraft:silverfish",          500.0);
+        DEFAULTS.put("minecraft:endermite",           500.0);
+        DEFAULTS.put("minecraft:phantom",           3_000.0);
+        // ── Mid-tier ─────────────────────────────────────────────────────────
+        DEFAULTS.put("minecraft:enderman",          5_000.0);
+        DEFAULTS.put("minecraft:pillager",          2_000.0);
+        DEFAULTS.put("minecraft:vindicator",        3_000.0);
+        DEFAULTS.put("minecraft:evoker",           15_000.0);
+        DEFAULTS.put("minecraft:ravager",          20_000.0);
+        DEFAULTS.put("minecraft:guardian",          5_000.0);
+        DEFAULTS.put("minecraft:shulker",          10_000.0);
+        // ── Nether ───────────────────────────────────────────────────────────
+        DEFAULTS.put("minecraft:blaze",            10_000.0);
+        DEFAULTS.put("minecraft:wither_skeleton",  10_000.0);
+        DEFAULTS.put("minecraft:ghast",             5_000.0);
+        DEFAULTS.put("minecraft:magma_cube",        2_000.0);
+        DEFAULTS.put("minecraft:piglin_brute",      8_000.0);
+        DEFAULTS.put("minecraft:hoglin",            5_000.0);
+        DEFAULTS.put("minecraft:zoglin",            7_000.0);
+        // ── Bosses ───────────────────────────────────────────────────────────
+        DEFAULTS.put("minecraft:elder_guardian",   50_000.0);
+        DEFAULTS.put("minecraft:wither",          500_000.0);
+        DEFAULTS.put("minecraft:ender_dragon",  2_000_000.0);
+        // ── New / trial chambers ─────────────────────────────────────────────
+        DEFAULTS.put("minecraft:breeze",           10_000.0);
     }
 
     private final Map<String, Double> rewards = new HashMap<>();

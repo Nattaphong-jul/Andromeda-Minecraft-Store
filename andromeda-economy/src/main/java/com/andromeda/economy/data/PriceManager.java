@@ -46,7 +46,8 @@ public class PriceManager {
         m.put("minecraft:netherite_ingot",   1_000_000.0);
         m.put("minecraft:netherite_scrap",   235_000.0); // (ingot−4×gold)/4
         m.put("minecraft:ancient_debris",    235_000.0); // 1:1 → scrap
-        m.put("minecraft:elytra",            2_000_000.0);
+        m.put("minecraft:elytra",           10_000_000.0);
+        m.put("minecraft:spawner",          40_000_000.0);
         m.put("minecraft:dragon_egg",        50_000_000.0);
         // ── Raw (pre-smelt) materials ────────────────────────────────────────
         m.put("minecraft:raw_iron",          1_600.0);
@@ -169,8 +170,37 @@ public class PriceManager {
         m.put("minecraft:music_disc_creator",    500_000.0);
         m.put("minecraft:music_disc_creator_music_box", 500_000.0);
         m.put("minecraft:music_disc_precipice",  500_000.0);
+        // ── Fireworks ────────────────────────────────────────────────────────
+        m.put("minecraft:firework_rocket",         2_000.0);
+        m.put("minecraft:firework_star",           1_000.0);
+        // ── Logs (fixed at 2 K to prevent plank-arbitrage) ──────────────────
+        // All overworld log variants
+        for (String wood : new String[]{"oak","spruce","birch","jungle","acacia","dark_oak",
+                                         "cherry","mangrove","pale_oak"}) {
+            m.put("minecraft:" + wood + "_log",     2_000.0);
+            m.put("minecraft:" + wood + "_wood",    2_000.0);
+            m.put("minecraft:stripped_" + wood + "_log",  1_800.0);
+            m.put("minecraft:stripped_" + wood + "_wood", 1_800.0);
+        }
+        m.put("minecraft:crimson_stem",            2_000.0);
+        m.put("minecraft:warped_stem",             2_000.0);
+        m.put("minecraft:stripped_crimson_stem",   1_800.0);
+        m.put("minecraft:stripped_warped_stem",    1_800.0);
+        m.put("minecraft:bamboo_block",            1_500.0);
         ANCHORS = Collections.unmodifiableMap(m);
     }
+
+    /** Creative-mode / admin-only items that must not appear in the shop. */
+    private static final Set<String> BLOCKED = Set.of(
+        "minecraft:air", "minecraft:cave_air", "minecraft:void_air",
+        "minecraft:command_block", "minecraft:chain_command_block",
+        "minecraft:repeating_command_block", "minecraft:command_block_minecart",
+        "minecraft:bedrock", "minecraft:barrier", "minecraft:structure_block",
+        "minecraft:structure_void", "minecraft:jigsaw", "minecraft:light",
+        "minecraft:debug_stick", "minecraft:knowledge_book",
+        "minecraft:petrified_oak_slab", "minecraft:moving_piston",
+        "minecraft:bundle"  // unobtainable in survival in most versions
+    );
 
     private final Map<String, PriceEntry> prices = new LinkedHashMap<>();
 
@@ -185,6 +215,7 @@ public class PriceManager {
             Identifier id = BuiltInRegistries.ITEM.getKey(item);
             if (id == null) continue;
             String key = id.toString();
+            if (BLOCKED.contains(key)) continue; // skip creative-only items
             double price = computePrice(id);
             List<String> tags = buildTags(id);
             addEntry(root, key, price, tags);
@@ -234,7 +265,9 @@ public class PriceManager {
         if (contains(path, "redstone", "quartz"))                     return rng(20_000,      100_000);
         if (contains(path, "copper", "lapis"))                        return rng(2_000,        10_000);
         if (contains(path, "gravel", "sand", "flint"))                return rng(10,               50);
-        if (contains(path, "wood", "log", "plank", "stone", "leather")) return rng(500,          2_000);
+        // Logs are anchored separately to prevent plank-arbitrage; catch remaining wood items here
+        if (path.endsWith("_planks"))                                 return rng(400,           600);
+        if (contains(path, "wood", "log", "stone", "leather"))        return rng(500,          2_000);
         if (!"minecraft".equals(ns)) return 5_000.0;
         return rng(1_000, 5_000);
     }
@@ -313,6 +346,18 @@ public class PriceManager {
                 double price = basePrice * v.multiplier();
                 List<String> tags = new ArrayList<>(Arrays.asList("potion", v.typeTag(), path));
                 for (String w : path.split("_")) tags.add(w);
+                // Common search aliases so players can find potions by popular name
+                if (path.contains("swiftness"))    { tags.add("speed"); tags.add("swift"); }
+                if (path.contains("strength"))       tags.add("power");
+                if (path.contains("leaping"))      { tags.add("jump"); tags.add("leap"); }
+                if (path.contains("healing"))      { tags.add("heal"); tags.add("health"); }
+                if (path.contains("harming"))        tags.add("damage");
+                if (path.contains("slowness"))       tags.add("slow");
+                if (path.contains("invisibility")) { tags.add("invis"); tags.add("invisible"); }
+                if (path.contains("regeneration"))   tags.add("regen");
+                if (path.contains("fire_resistance")) tags.add("fire");
+                if (path.contains("night_vision"))    tags.add("night");
+                if (path.contains("water_breathing")) tags.add("water");
                 addEntry(root, shopId, price, tags);
                 dirty = true;
             }
