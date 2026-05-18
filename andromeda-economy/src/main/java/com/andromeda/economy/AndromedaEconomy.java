@@ -28,6 +28,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -131,7 +132,14 @@ public class AndromedaEconomy implements ModInitializer {
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((LivingEntity entity, DamageSource src) -> {
-            if (entity instanceof ServerPlayer) return;
+            if (entity instanceof ServerPlayer victim) {
+                // PvP: killer steals 10 % of victim's balance
+                if (src.getEntity() instanceof ServerPlayer killer && !killer.getUUID().equals(victim.getUUID())) {
+                    handlePvpKill(killer, victim);
+                }
+                return;
+            }
+            // Mob kill reward
             if (src.getEntity() instanceof ServerPlayer killer) {
                 MobRewardManager.handleKill(killer, entity);
             }
@@ -165,16 +173,27 @@ public class AndromedaEconomy implements ModInitializer {
     // ─────────────────────────────────────────────────────────────────────────
     // Hybrid client-mod helpers
 
-    /** Sends the complete item→price map to a player who has the client mod. */
+    /**
+     * Sends SELL prices (already discounted correctly) to a client-mod player.
+     * Using sell prices means the client never needs to know about NO_DISCOUNT —
+     * gold and Bitcoin arrive with their full price, regular items at 85%.
+     */
     public static void sendPriceMap(ServerPlayer player) {
         Map<String, Double> data = new HashMap<>();
         for (Item item : BuiltInRegistries.ITEM) {
             Identifier id = BuiltInRegistries.ITEM.getKey(item);
             if (id == null) continue;
-            double buy = prices.getBuyPrice(id.toString());
-            if (buy > 0) data.put(id.toString(), buy);
+            double sell = prices.getSellPrice(id.toString());
+            if (sell > 0) data.put(id.toString(), sell);
         }
         ServerPlayNetworking.send(player, new PriceMapPayload(data));
+    }
+
+    /** Pushes a fresh price map to every connected client-mod player. */
+    public static void broadcastPriceMap(MinecraftServer server) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (CLIENT_MOD_PLAYERS.contains(player.getUUID())) sendPriceMap(player);
+        }
     }
 
     /**
@@ -205,6 +224,37 @@ public class AndromedaEconomy implements ModInitializer {
             player.getX(), player.getY(), player.getZ(),
             volume, pitch, 0L
         ));
+    }
+
+    /** Steals 10 % of the victim's balance and gives it to the killer. Server-side only. */
+    private static void handlePvpKill(ServerPlayer killer, ServerPlayer victim) {
+        PlayerData victimData = db.getPlayer(victim.getStringUUID());
+        if (victimData == null || victimData.balance < 1) return;
+
+        double stolen = Math.floor(victimData.balance * 0.10);
+        if (stolen < 1) return;
+
+        db.setBalance(victim.getStringUUID(), victimData.balance - stolen);
+        db.addBalance(killer.getStringUUID(), stolen);
+
+        String amtStr = EconomyUtils.compact(stolen) + " THB";
+
+        victim.sendSystemMessage(
+            Component.literal("☠ ").withStyle(ChatFormatting.RED)
+                .append(Component.literal(killer.getName().getString()).withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" stole ").withStyle(ChatFormatting.RED))
+                .append(Component.literal(amtStr).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" from you!").withStyle(ChatFormatting.RED))
+        );
+        killer.sendSystemMessage(
+            Component.literal("☠ You stole ").withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(amtStr).withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" from " + victim.getName().getString() + "!").withStyle(ChatFormatting.GREEN))
+        );
+
+        playMoneySound(killer);
+        hud.update(killer);
+        hud.update(victim);
     }
 
     public static void playMoneySound(ServerPlayer player) {

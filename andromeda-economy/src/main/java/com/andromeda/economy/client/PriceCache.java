@@ -8,31 +8,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Client-side cache of item prices received from the server.
- * Only active when this mod is installed on the client.
+ * Client-side cache of SELL prices received from the server.
+ *
+ * The server pre-computes the correct sell price for every item
+ * (including the no-discount rules for gold and Bitcoin) and sends
+ * those values directly.  This class just stores and looks them up —
+ * no further multiplication is applied, so gold/Bitcoin display correctly.
  */
 @Environment(EnvType.CLIENT)
 public final class PriceCache {
 
-    private static Map<String, Double> buyPrices = Collections.emptyMap();
+    private static Map<String, Double> sellPrices = Collections.emptyMap();
 
     private PriceCache() {}
 
     public static void update(Map<String, Double> received) {
-        buyPrices = new HashMap<>(received);
+        sellPrices = new HashMap<>(received);
     }
 
     public static void clear() {
-        buyPrices = Collections.emptyMap();
+        sellPrices = Collections.emptyMap();
     }
 
     public static boolean isLoaded() {
-        return !buyPrices.isEmpty();
+        return !sellPrices.isEmpty();
     }
 
-    /** Returns the sell price (85 % of buy) for the given item registry ID, or -1 if unknown. */
+    /** Returns the sell price for the given item registry ID, or -1 if unknown. */
     public static double getSellPrice(String itemId) {
-        Double buy = buyPrices.get(itemId);
-        return buy != null ? buy * 0.85 : -1;
+        Double p = sellPrices.get(itemId);
+        return p != null ? p : -1;
     }
 }

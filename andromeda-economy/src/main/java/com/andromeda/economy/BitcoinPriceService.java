@@ -61,6 +61,7 @@ public class BitcoinPriceService {
             cachedPrice = finalPrice;
             server.execute(() -> {
                 AndromedaEconomy.prices.updateBitcoinPrice(finalPrice);
+                AndromedaEconomy.broadcastPriceMap(server); // push corrected sell prices to all clients
                 AndromedaEconomy.LOGGER.info("[Andromeda] Bitcoin price: {} THB", (long) finalPrice);
             });
         });
