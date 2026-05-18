@@ -52,7 +52,7 @@ public class AndromedaEconomy implements ModInitializer {
     public static MobRewardManager mobRewards;
     public static ScoreboardHud hud;
     public static RegistryAccess registryAccess;
-    public static GoldPriceService goldPrice;
+    public static BitcoinPriceService bitcoinPrice;
 
     public static final Map<UUID, Consumer<String>> PENDING_CHAT = new HashMap<>();
 
@@ -69,7 +69,8 @@ public class AndromedaEconomy implements ModInitializer {
         prices     = new PriceManager();
         mobRewards = new MobRewardManager();
         hud        = new ScoreboardHud();
-        goldPrice  = new GoldPriceService();
+        bitcoinPrice = new BitcoinPriceService();
+        prices.initBitcoin(BitcoinPriceService.FALLBACK_PRICE); // seed before API call
 
         // Register the S2C price-map payload so the server can send it to clients
         PayloadTypeRegistry.clientboundPlay().register(PriceMapPayload.TYPE, PriceMapPayload.CODEC);
@@ -86,8 +87,8 @@ public class AndromedaEconomy implements ModInitializer {
             registryAccess = server.registryAccess();
             prices.addEnchantedBooks(server);
             prices.addPotions(server);
-            // Fetch live gold price immediately on start
-            goldPrice.fetchAndApply(server);
+            // Fetch live Bitcoin price immediately on start
+            bitcoinPrice.fetchAndApply(server);
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -138,8 +139,8 @@ public class AndromedaEconomy implements ModInitializer {
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             int tick = server.getTickCount();
-            // Refresh live gold price every 15 minutes (18 000 ticks)
-            if (tick % 18_000 == 0 && tick > 0) goldPrice.fetchAndApply(server);
+            // Refresh Bitcoin price every 15 minutes (18 000 ticks)
+            if (tick % 18_000 == 0 && tick > 0) bitcoinPrice.fetchAndApply(server);
             if (tick % 20 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     hud.updatePingOnly(player);

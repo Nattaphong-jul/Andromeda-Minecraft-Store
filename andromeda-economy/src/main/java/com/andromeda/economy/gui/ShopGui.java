@@ -143,6 +143,13 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
+        // Bitcoin — Command Block named "Bitcoin" (admin item, can't be farmed)
+        if (shopId.equals("bitcoin")) {
+            ItemStack btc = new ItemStack(Items.COMMAND_BLOCK, count);
+            btc.set(DataComponents.CUSTOM_NAME,
+                Component.literal("₿ Bitcoin").withStyle(ChatFormatting.GOLD));
+            return btc;
+        }
         // Firework rockets with specific flight durations: "firework_rocket:N"
         if (shopId.startsWith("firework_rocket:")) {
             int duration = Integer.parseInt(shopId.substring("firework_rocket:".length()));
@@ -181,6 +188,7 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
+        if (shopId.equals("bitcoin"))         return "₿ Bitcoin";
         if (shopId.startsWith("firework_rocket:")) {
             int dur = Integer.parseInt(shopId.substring("firework_rocket:".length()));
             return "Firework Rocket (Duration " + dur + ")";

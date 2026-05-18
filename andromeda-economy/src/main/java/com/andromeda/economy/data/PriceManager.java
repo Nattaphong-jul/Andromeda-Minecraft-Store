@@ -426,11 +426,16 @@ public class PriceManager {
         return e != null ? e.price : -1;
     }
 
-    /** Gold items sell at full buy price; everything else sells at 85%. */
+    /**
+     * Items that sell at full buy price (no 15 % discount).
+     * Gold: fixed at 60 K, no discount by design.
+     * Bitcoin (command_block): market price, always buy = sell.
+     */
     private static final Set<String> NO_DISCOUNT = Set.of(
         "minecraft:gold_ingot", "minecraft:gold_block", "minecraft:gold_nugget",
         "minecraft:raw_gold", "minecraft:gold_ore",
-        "minecraft:deepslate_gold_ore", "minecraft:nether_gold_ore"
+        "minecraft:deepslate_gold_ore", "minecraft:nether_gold_ore",
+        "minecraft:command_block"   // Bitcoin — market rate, no spread
     );
 
     public double getSellPrice(String itemId) {
@@ -439,27 +444,23 @@ public class PriceManager {
         return NO_DISCOUNT.contains(itemId) ? buy : buy * 0.85;
     }
 
-    /** Called by GoldPriceService to push live market prices for all gold items. */
-    public void updateGoldPrice(double goldIngot) {
-        double nugget = Math.round(goldIngot / 9.0);
-        double block  = goldIngot * 9;
-        updatePrice("minecraft:gold_ingot",           goldIngot);
-        updatePrice("minecraft:gold_nugget",          nugget);
-        updatePrice("minecraft:gold_block",           block);
-        updatePrice("minecraft:raw_gold",             goldIngot);      // 1:1 smelts to ingot
-        updatePrice("minecraft:gold_ore",             goldIngot);
-        updatePrice("minecraft:deepslate_gold_ore",   goldIngot * 1.05);
-        updatePrice("minecraft:nether_gold_ore",      goldIngot * 0.4); // drops nuggets
+    private static final List<String> BITCOIN_TAGS = List.of("bitcoin", "btc", "crypto", "command", "block");
+
+    /** Seeds the in-memory Bitcoin entry on startup (before first API call). */
+    public void initBitcoin(double initialPrice) {
+        prices.put("bitcoin",                    new PriceEntry(initialPrice, BITCOIN_TAGS));
+        prices.put("minecraft:command_block",    new PriceEntry(initialPrice, BITCOIN_TAGS));
     }
 
-    private void updatePrice(String key, double price) {
-        PriceEntry old = prices.get(key);
-        List<String> tags = old != null ? old.tags : buildTags(Identifier.parse(key));
-        prices.put(key, new PriceEntry(price, tags));
+    /** Called by BitcoinPriceService every 15 min with the live market price. */
+    public void updateBitcoinPrice(double price) {
+        prices.put("bitcoin",                    new PriceEntry(price, BITCOIN_TAGS));
+        prices.put("minecraft:command_block",    new PriceEntry(price, BITCOIN_TAGS));
     }
 
     /** Returns a search-friendly display name for any shopId. */
     private static String searchableName(String key) {
+        if (key.equals("bitcoin")) return "bitcoin btc crypto";
         if (key.startsWith("enchanted_book:")) {
             // "enchanted_book:minecraft:protection:4" -> "protection 4" or "protection iv"
             int lastColon = key.lastIndexOf(':');
