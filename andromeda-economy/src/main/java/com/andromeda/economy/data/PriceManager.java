@@ -4,13 +4,17 @@ import com.andromeda.economy.AndromedaEconomy;
 import com.andromeda.economy.EconomyUtils;
 import com.google.gson.*;
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.item.enchantment.Enchantment;
 
 import java.io.*;
@@ -39,7 +43,7 @@ public class PriceManager {
         m.put("minecraft:gold_nugget",        6_700.0);   // ≈ ingot/9
         m.put("minecraft:lapis_lazuli",      3_000.0);
         m.put("minecraft:redstone",          1_000.0);
-        m.put("minecraft:quartz",            900.0);
+        m.put("minecraft:quartz",            5_000.0);  // 4 → 20K block
         m.put("minecraft:amethyst_shard",    2_000.0);
         m.put("minecraft:diamond",           100_000.0);
         m.put("minecraft:emerald",           80_000.0);
@@ -63,7 +67,11 @@ public class PriceManager {
         m.put("minecraft:gold_block",        540_000.0);
         m.put("minecraft:lapis_block",       27_000.0);
         m.put("minecraft:redstone_block",    9_000.0);
-        m.put("minecraft:quartz_block",      3_600.0);   // 4 quartz per block
+        m.put("minecraft:quartz_block",          20_000.0);
+        m.put("minecraft:quartz_pillar",         20_000.0);
+        m.put("minecraft:chiseled_quartz_block", 20_000.0);
+        m.put("minecraft:quartz_bricks",         20_000.0);
+        m.put("minecraft:smooth_quartz",         20_000.0);
         m.put("minecraft:amethyst_block",    18_000.0);
         m.put("minecraft:diamond_block",     900_000.0);
         m.put("minecraft:emerald_block",     720_000.0);
@@ -114,8 +122,14 @@ public class PriceManager {
         m.put("minecraft:heart_of_the_sea",        500_000.0);
         m.put("minecraft:trident",                 1_000_000.0);
         m.put("minecraft:mace",                    2_000_000.0);
+        m.put("minecraft:heavy_core",              1_500_000.0); // main Mace component
+        m.put("minecraft:breeze_rod",                150_000.0); // 3 needed for Mace
+        m.put("minecraft:trial_spawner",           3_000_000.0);
+        m.put("minecraft:reinforced_deepslate",       35_000.0);
         m.put("minecraft:totem_of_undying",          100_000.0);
         m.put("minecraft:nether_star",             5_000_000.0);
+        m.put("minecraft:light",                 100_000_000.0); // admin-only light block
+        m.put("minecraft:wet_sponge",               50_000.0);  // = dry sponge — no furnace arbitrage
         // ── Misc / commonly misclassified ────────────────────────────────────
         m.put("minecraft:string",                    500.0);
         m.put("minecraft:feather",                   200.0);
@@ -202,6 +216,7 @@ public class PriceManager {
         "minecraft:structure_void", "minecraft:jigsaw", "minecraft:light",
         "minecraft:debug_stick", "minecraft:knowledge_book",
         "minecraft:petrified_oak_slab", "minecraft:moving_piston",
+        "minecraft:end_portal_frame", // creative-only
         "minecraft:bundle",           // unobtainable in survival in most versions
         "minecraft:firework_rocket"   // replaced by duration-specific shop entries
     );
@@ -440,6 +455,23 @@ public class PriceManager {
         "minecraft:deepslate_gold_ore", "minecraft:nether_gold_ore",
         "minecraft:command_block"   // Bitcoin — market rate, no spread
     );
+
+    /**
+     * Returns the sell price for an actual ItemStack, handling special cases
+     * (e.g. firework rockets priced by flight duration).
+     */
+    public double getSellPriceForStack(ItemStack stack) {
+        // Firework rockets: sell price depends on flight duration
+        if (stack.getItem() == Items.FIREWORK_ROCKET) {
+            Fireworks fw = stack.get(DataComponents.FIREWORKS);
+            if (fw != null) {
+                double p = getSellPrice("firework_rocket:" + fw.flightDuration());
+                if (p > 0) return p;
+            }
+        }
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id != null ? getSellPrice(id.toString()) : -1;
+    }
 
     public double getSellPrice(String itemId) {
         double buy = getBuyPrice(itemId);

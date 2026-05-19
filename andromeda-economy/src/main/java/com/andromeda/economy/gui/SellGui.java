@@ -4,9 +4,7 @@ import com.andromeda.economy.AndromedaEconomy;
 import com.andromeda.economy.EconomyUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
@@ -85,8 +83,7 @@ public class SellGui extends ChestMenu {
             ItemStack stack = inv.getItem(i);
             if (stack.isEmpty()) continue;
 
-            Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-            double sellPrice = id != null ? AndromedaEconomy.prices.getSellPrice(id.toString()) : -1;
+            double sellPrice = AndromedaEconomy.prices.getSellPriceForStack(stack);
 
             if (sellPrice > 0) {
                 total += sellPrice * stack.getCount();
