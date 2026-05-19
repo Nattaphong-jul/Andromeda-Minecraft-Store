@@ -2,6 +2,15 @@ package com.andromeda.economy.data;
 
 import com.andromeda.economy.AndromedaEconomy;
 
+import com.mojang.serialization.DataResult;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.ItemStack;
+
 import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
@@ -23,6 +32,13 @@ public class DatabaseManager {
                         username TEXT,
                         balance  REAL    DEFAULT 0.0,
                         kills    INTEGER DEFAULT 0
+                    )""");
+                s.execute("""
+                    CREATE TABLE IF NOT EXISTS ender_chest_ext (
+                        uuid TEXT    NOT NULL,
+                        slot INTEGER NOT NULL,
+                        item_nbt TEXT NOT NULL,
+                        PRIMARY KEY (uuid, slot)
                     )""");
             }
         } catch (Exception e) {
@@ -139,6 +155,54 @@ public class DatabaseManager {
         } catch (SQLException e) {
             AndromedaEconomy.LOGGER.error("getAllUsernames failed", e);
             return List.of();
+        }
+    }
+
+    // ── Ender chest extended storage ─────────────────────────────────────────
+
+    public void saveEnderChestExt(String uuid, SimpleContainer extra, RegistryAccess ra) {
+        try {
+            try (PreparedStatement del = conn.prepareStatement(
+                    "DELETE FROM ender_chest_ext WHERE uuid = ?")) {
+                del.setString(1, uuid);
+                del.executeUpdate();
+            }
+            RegistryOps<Tag> ops = ra.createSerializationContext(NbtOps.INSTANCE);
+            try (PreparedStatement ins = conn.prepareStatement(
+                    "INSERT INTO ender_chest_ext (uuid, slot, item_nbt) VALUES (?, ?, ?)")) {
+                for (int i = 0; i < extra.getContainerSize(); i++) {
+                    ItemStack stack = extra.getItem(i);
+                    if (stack.isEmpty()) continue;
+                    DataResult<Tag> res = ItemStack.CODEC.encodeStart(ops, stack);
+                    Tag tag = res.result().orElse(null);
+                    if (tag == null) continue;
+                    ins.setString(1, uuid);
+                    ins.setInt(2, i);
+                    ins.setString(3, tag.toString());
+                    ins.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            AndromedaEconomy.LOGGER.error("saveEnderChestExt failed for {}", uuid, e);
+        }
+    }
+
+    public void loadEnderChestExt(String uuid, SimpleContainer extra, RegistryAccess ra) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT slot, item_nbt FROM ender_chest_ext WHERE uuid = ?")) {
+            ps.setString(1, uuid);
+            ResultSet rs = ps.executeQuery();
+            RegistryOps<Tag> ops = ra.createSerializationContext(NbtOps.INSTANCE);
+            while (rs.next()) {
+                int slot = rs.getInt("slot");
+                if (slot < 0 || slot >= extra.getContainerSize()) continue;
+                try {
+                    Tag tag = TagParser.parseCompoundFully(rs.getString("item_nbt"));
+                    extra.setItem(slot, ItemStack.CODEC.parse(ops, tag).result().orElse(ItemStack.EMPTY));
+                } catch (Exception ignored) {}
+            }
+        } catch (SQLException e) {
+            AndromedaEconomy.LOGGER.error("loadEnderChestExt failed for {}", uuid, e);
         }
     }
 

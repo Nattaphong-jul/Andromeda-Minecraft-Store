@@ -55,6 +55,7 @@ public class SellGui extends ChestMenu {
     private static ItemStack glass() {
         ItemStack s = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
         s.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
+        ShopGui.markDisplay(s);
         return s;
     }
 
@@ -62,6 +63,7 @@ public class SellGui extends ChestMenu {
         ItemStack s = new ItemStack(Items.GREEN_DYE);
         s.set(DataComponents.CUSTOM_NAME,
             Component.literal("✔ Confirm Sale").withStyle(ChatFormatting.GREEN));
+        ShopGui.markDisplay(s);
         return s;
     }
 

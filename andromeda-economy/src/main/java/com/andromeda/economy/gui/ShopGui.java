@@ -223,12 +223,14 @@ public class ShopGui extends ChestMenu {
                 ? label + "  (page " + (page + 1) + "/" + (maxPage() + 1) + ")"
                 : " "
             ).withStyle(ChatFormatting.WHITE));
+        markDisplay(stack); // arrows have a real price — hide it from tooltip
         return stack;
     }
 
     private static ItemStack glass() {
         ItemStack s = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
         s.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
+        markDisplay(s);
         return s;
     }
 

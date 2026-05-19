@@ -107,6 +107,7 @@ public class QuantityGui extends ChestMenu {
     private static ItemStack glass() {
         ItemStack s = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
         s.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
+        ShopGui.markDisplay(s);
         return s;
     }
 

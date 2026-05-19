@@ -10,7 +10,11 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import com.andromeda.economy.gui.EnderChestGui;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ClientboundPlayChannelEvents;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.block.EnderChestBlock;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -165,6 +169,17 @@ public class AndromedaEconomy implements ModInitializer {
                     }
                 }
             }
+        });
+
+        // Intercept ender chest block use and open our custom 54-slot GUI
+        UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+            if (world.isClientSide()) return InteractionResult.PASS;
+            if (!(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
+            if (world.getBlockState(hitResult.getBlockPos()).getBlock() instanceof EnderChestBlock) {
+                EnderChestGui.open(sp);
+                return InteractionResult.SUCCESS;
+            }
+            return InteractionResult.PASS;
         });
 
         LOGGER.info("Andromeda Economy initialised.");
