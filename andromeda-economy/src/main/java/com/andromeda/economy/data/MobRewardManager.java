@@ -47,6 +47,7 @@ public class MobRewardManager {
         DEFAULTS.put("minecraft:ghast",             5_000.0);
         DEFAULTS.put("minecraft:magma_cube",        2_000.0);
         DEFAULTS.put("minecraft:piglin_brute",      8_000.0);
+        DEFAULTS.put("minecraft:zombified_piglin",  3_000.0);
         DEFAULTS.put("minecraft:hoglin",            5_000.0);
         DEFAULTS.put("minecraft:zoglin",            7_000.0);
         // ── Bosses ───────────────────────────────────────────────────────────

@@ -231,7 +231,7 @@ public class AndromedaEconomy implements ModInitializer {
         PlayerData victimData = db.getPlayer(victim.getStringUUID());
         if (victimData == null || victimData.balance < 1) return;
 
-        double stolen = Math.floor(victimData.balance * 0.10);
+        double stolen = Math.floor(victimData.balance * 0.05);
         if (stolen < 1) return;
 
         db.setBalance(victim.getStringUUID(), victimData.balance - stolen);

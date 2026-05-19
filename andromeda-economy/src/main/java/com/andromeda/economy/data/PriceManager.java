@@ -52,6 +52,9 @@ public class PriceManager {
         // ── Raw (pre-smelt) materials ────────────────────────────────────────
         m.put("minecraft:raw_iron",          1_600.0);
         m.put("minecraft:raw_gold",          60_000.0);
+        m.put("minecraft:raw_gold_block",   540_000.0);  // 9× raw gold — prevents block→raw arbitrage
+        m.put("minecraft:raw_iron_block",    18_000.0);  // 9× raw iron (same logic)
+        m.put("minecraft:raw_copper_block",   5_760.0);  // 9× raw copper
         m.put("minecraft:raw_copper",        640.0);
         // ── Material blocks (9× ingot, quartz 4×, amethyst 9×) ──────────────
         m.put("minecraft:coal_block",        4_500.0);
@@ -461,6 +464,10 @@ public class PriceManager {
     /** Returns a search-friendly display name for any shopId. */
     private static String searchableName(String key) {
         if (key.equals("bitcoin")) return "bitcoin btc crypto";
+        if (key.startsWith("firework_rocket:")) {
+            String dur = key.substring("firework_rocket:".length());
+            return "firework rocket duration " + dur;
+        }
         if (key.startsWith("enchanted_book:")) {
             // "enchanted_book:minecraft:protection:4" -> "protection 4" or "protection iv"
             int lastColon = key.lastIndexOf(':');
@@ -490,8 +497,9 @@ public class PriceManager {
         String lower = query.toLowerCase(Locale.ROOT);
         List<Map.Entry<String, PriceEntry>> result = new ArrayList<>();
 
-        // Name search (searchable display name)
+        // Name search (searchable display name) — skip items hidden from shop
         for (Map.Entry<String, PriceEntry> e : prices.entrySet()) {
+            if (BLOCKED.contains(e.getKey())) continue;
             if (searchableName(e.getKey()).contains(lower)) result.add(e);
         }
         if (!result.isEmpty()) {
@@ -502,6 +510,7 @@ public class PriceManager {
         // Tag fallback
         String[] words = lower.split("\\s+");
         for (Map.Entry<String, PriceEntry> e : prices.entrySet()) {
+            if (BLOCKED.contains(e.getKey())) continue;
             for (String w : words) {
                 if (e.getValue().tags.contains(w)) { result.add(e); break; }
             }
@@ -511,7 +520,10 @@ public class PriceManager {
     }
 
     public List<Map.Entry<String, PriceEntry>> getAll() {
-        List<Map.Entry<String, PriceEntry>> list = new ArrayList<>(prices.entrySet());
+        List<Map.Entry<String, PriceEntry>> list = new ArrayList<>();
+        for (Map.Entry<String, PriceEntry> e : prices.entrySet()) {
+            if (!BLOCKED.contains(e.getKey())) list.add(e);
+        }
         list.sort(Comparator.comparing(e -> searchableName(e.getKey())));
         return list;
     }
