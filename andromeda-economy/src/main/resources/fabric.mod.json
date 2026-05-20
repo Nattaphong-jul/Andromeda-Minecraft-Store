@@ -15,7 +15,8 @@
     ]
   },
   "mixins": [
-    "andromeda_economy.mixins.json"
+    "andromeda_economy.mixins.json",
+    "andromeda_economy_server.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.16.0",

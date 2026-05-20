@@ -2,11 +2,13 @@ package com.andromeda.economy.hud;
 
 import com.andromeda.economy.AndromedaEconomy;
 import com.andromeda.economy.EconomyUtils;
+import com.andromeda.economy.RankManager;
 import com.andromeda.economy.data.PlayerData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.numbers.BlankFormat;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
 import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
 import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
@@ -23,16 +25,16 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Per-player sidebar HUD (per-player packet trick — no client mod required).
+ * Per-player sidebar HUD.
  *
- * Sidebar layout (descending score = nearer to title):
+ * Sidebar layout (descending score):
  *   [Bold Aqua] Andromeda   ← objective title
  *   <blank>                  ← score 6
- *   B Money 1.5K             ← score 5  (B=green, Money=white, amount=green)
- *   ⚔ Kills 23               ← score 4  (⚔=red, Kills=white, count=red)
- *   ★ Rank CEO               ← score 3  (★=gold, Rank=white, name=rank colour)
+ *   B Money 1.5K             ← score 5
+ *   ⚔ Kills 23               ← score 4
+ *   ★ Rank CEO               ← score 3
  *   <blank>                  ← score 2
- *   Ping (12 ms)             ← score 1  (white)
+ *   Ping (12 ms)             ← score 1
  */
 public class ScoreboardHud {
 
@@ -47,31 +49,6 @@ public class ScoreboardHud {
     private final Set<String> initialised = new HashSet<>();
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Rank helpers
-
-    private static String rankName(double balance) {
-        if (balance >= 500_000_000_000.0) return "Elon Musk";
-        if (balance >= 10_000_000_000.0)  return "CK";
-        if (balance >= 1_000_000_000.0)   return "MrBeast";
-        if (balance >= 100_000_000.0)     return "CEO";
-        if (balance >= 10_000_000.0)      return "Anutin";
-        if (balance >= 100_000.0)         return "Salary Man";
-        return "Unemployed";
-    }
-
-    private static ChatFormatting rankColor(String rank) {
-        return switch (rank) {
-            case "Salary Man" -> ChatFormatting.WHITE;
-            case "Anutin"     -> ChatFormatting.BLUE;
-            case "CEO"        -> ChatFormatting.GREEN;
-            case "MrBeast"    -> ChatFormatting.AQUA;
-            case "CK"         -> ChatFormatting.LIGHT_PURPLE;
-            case "Elon Musk"  -> ChatFormatting.GOLD;
-            default           -> ChatFormatting.RED;   // Unemployed
-        };
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
 
     private Objective getOrCreate(ServerPlayer player) {
         return objectives.computeIfAbsent(player.getStringUUID(), uuid -> {
@@ -80,19 +57,17 @@ public class ScoreboardHud {
             MutableComponent title = Component.literal("Andromeda")
                 .withStyle(s -> s.withBold(true).withColor(ChatFormatting.AQUA));
             return local.addObjective(
-                name,
-                ObjectiveCriteria.DUMMY,
-                title,
-                ObjectiveCriteria.RenderType.INTEGER,
-                false,
-                BlankFormat.INSTANCE
-            );
+                name, ObjectiveCriteria.DUMMY, title,
+                ObjectiveCriteria.RenderType.INTEGER, false, BlankFormat.INSTANCE);
         });
     }
 
     public void update(ServerPlayer player) {
         PlayerData data = AndromedaEconomy.db.getPlayer(player.getStringUUID());
         if (data == null) return;
+
+        // Keep RankManager cache in sync — Mixin reads from here for tab list
+        RankManager.cacheBalance(player.getUUID(), data.balance);
 
         Objective obj = getOrCreate(player);
         String uuid = player.getStringUUID();
@@ -103,35 +78,37 @@ public class ScoreboardHud {
         player.connection.send(new ClientboundSetObjectivePacket(obj, mode));
         player.connection.send(new ClientboundSetDisplayObjectivePacket(DisplaySlot.SIDEBAR, obj));
 
-        // Spacer (score 6)
         sendLine(player, obj.getName(), LINE_SP1, 6, Component.literal(" "));
 
-        // B Money (score 5)
         MutableComponent moneyLine = Component.literal("B ").withStyle(ChatFormatting.GREEN)
             .append(Component.literal("Money ").withStyle(ChatFormatting.WHITE))
             .append(Component.literal(EconomyUtils.compact(data.balance)).withStyle(ChatFormatting.GREEN));
         sendLine(player, obj.getName(), LINE_BAL, 5, moneyLine);
 
-        // ⚔ Kills (score 4)
         MutableComponent killsLine = Component.literal("⚔ ").withStyle(ChatFormatting.RED)
             .append(Component.literal("Kills ").withStyle(ChatFormatting.WHITE))
             .append(Component.literal(EconomyUtils.compact(data.kills)).withStyle(ChatFormatting.RED));
         sendLine(player, obj.getName(), LINE_KLS, 4, killsLine);
 
-        // ★ Rank (score 3)
-        String rank = rankName(data.balance);
+        String rank = RankManager.rankName(data.balance);
         MutableComponent rankLine = Component.literal("★ ").withStyle(ChatFormatting.GOLD)
             .append(Component.literal("Rank ").withStyle(ChatFormatting.WHITE))
-            .append(Component.literal(rank).withStyle(rankColor(rank)));
+            .append(Component.literal(rank).withStyle(RankManager.rankColor(rank)));
         sendLine(player, obj.getName(), LINE_RANK, 3, rankLine);
 
-        // Spacer (score 2) — non-breaking space avoids client deduplication with score-6 spacer
-        sendLine(player, obj.getName(), LINE_SP2, 2, Component.literal(" "));
+        sendLine(player, obj.getName(), LINE_SP2, 2, Component.literal(" "));
 
-        // Ping (score 1)
         sendLine(player, obj.getName(), LINE_PING, 1,
             Component.literal("Ping (" + player.connection.latency() + " ms)")
                 .withStyle(ChatFormatting.WHITE));
+
+        // Assign overhead team (scoreboard team prefix controls nametag)
+        assignOverheadTeam(player, rank);
+
+        // Broadcast updated tab-list display name to ALL connected players
+        var packet = new ClientboundPlayerInfoUpdatePacket(
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME, player);
+        player.level().getServer().getPlayerList().broadcastAll(packet);
     }
 
     public void updatePingOnly(ServerPlayer player) {
@@ -145,16 +122,28 @@ public class ScoreboardHud {
     public void remove(ServerPlayer player) {
         String uuid = player.getStringUUID();
         initialised.remove(uuid);
+        RankManager.removeCache(player.getUUID());
         Objective obj = objectives.remove(uuid);
         if (obj == null) return;
-        player.connection.send(new ClientboundSetObjectivePacket(obj, ClientboundSetObjectivePacket.METHOD_REMOVE));
+        player.connection.send(
+            new ClientboundSetObjectivePacket(obj, ClientboundSetObjectivePacket.METHOD_REMOVE));
     }
 
-    private static void sendLine(ServerPlayer player, String objName, String holder, int score, Component display) {
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Moves the player into the appropriate rank team so the overhead prefix updates. */
+    private static void assignOverheadTeam(ServerPlayer player, String rank) {
+        var scoreboard = player.level().getServer().getScoreboard();
+        String teamName = RankManager.teamName(rank);
+        var team = scoreboard.getPlayerTeam(teamName);
+        if (team == null) return; // teams created in AndromedaEconomy.setupRankTeams()
+        scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
+    }
+
+    private static void sendLine(ServerPlayer player, String objName, String holder,
+                                  int score, Component display) {
         player.connection.send(new ClientboundSetScorePacket(
             holder, objName, score,
-            Optional.of(display),
-            Optional.of(BlankFormat.INSTANCE)
-        ));
+            Optional.of(display), Optional.of(BlankFormat.INSTANCE)));
     }
 }

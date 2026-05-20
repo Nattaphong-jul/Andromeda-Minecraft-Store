@@ -33,6 +33,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Team;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -92,6 +94,7 @@ public class AndromedaEconomy implements ModInitializer {
             registryAccess = server.registryAccess();
             prices.addEnchantedBooks(server);
             prices.addPotions(server);
+            setupRankTeams(server);
             // Fetch live Bitcoin price immediately on start
             bitcoinPrice.fetchAndApply(server);
         });
@@ -241,7 +244,26 @@ public class AndromedaEconomy implements ModInitializer {
         ));
     }
 
-    /** Steals 10 % of the victim's balance and gives it to the killer. Server-side only. */
+    /**
+     * Creates one scoreboard team per rank on the server.
+     * Each team has a coloured prefix (abbreviation) that shows above the player's head.
+     * Players are moved between teams by ScoreboardHud.update() whenever balance changes.
+     */
+    private static void setupRankTeams(MinecraftServer server) {
+        var scoreboard = server.getScoreboard();
+        for (Map.Entry<String, net.minecraft.ChatFormatting> e : RankManager.RANKS.entrySet()) {
+            String rank     = e.getKey();
+            String teamName = RankManager.teamName(rank);
+            PlayerTeam team = scoreboard.getPlayerTeam(teamName);
+            if (team == null) team = scoreboard.addPlayerTeam(teamName);
+            team.setPlayerPrefix(RankManager.overheadPrefix(rank));
+            team.setColor(net.minecraft.ChatFormatting.RESET);  // don't recolour the player name
+            team.setNameTagVisibility(Team.Visibility.ALWAYS);
+        }
+        LOGGER.info("[Andromeda] Rank teams created.");
+    }
+
+    /** Steals 5 % of the victim's balance and gives it to the killer. Server-side only. */
     private static void handlePvpKill(ServerPlayer killer, ServerPlayer victim) {
         PlayerData victimData = db.getPlayer(victim.getStringUUID());
         if (victimData == null || victimData.balance < 1) return;
