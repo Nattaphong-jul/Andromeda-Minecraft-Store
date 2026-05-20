@@ -51,8 +51,9 @@ public class ScoreboardHud {
 
     private static String rankName(double balance) {
         if (balance >= 500_000_000_000.0) return "Elon Musk";
+        if (balance >= 10_000_000_000.0)  return "CK";
         if (balance >= 1_000_000_000.0)   return "MrBeast";
-        if (balance >= 100_000_000.0)     return "CEO";        // 100M – 1B
+        if (balance >= 100_000_000.0)     return "CEO";
         if (balance >= 10_000_000.0)      return "Anutin";
         if (balance >= 100_000.0)         return "Salary Man";
         return "Unemployed";
@@ -64,6 +65,7 @@ public class ScoreboardHud {
             case "Anutin"     -> ChatFormatting.BLUE;
             case "CEO"        -> ChatFormatting.GREEN;
             case "MrBeast"    -> ChatFormatting.AQUA;
+            case "CK"         -> ChatFormatting.LIGHT_PURPLE;
             case "Elon Musk"  -> ChatFormatting.GOLD;
             default           -> ChatFormatting.RED;   // Unemployed
         };
