@@ -213,7 +213,7 @@ public class PriceManager {
         "minecraft:command_block", "minecraft:chain_command_block",
         "minecraft:repeating_command_block", "minecraft:command_block_minecart",
         "minecraft:bedrock", "minecraft:barrier", "minecraft:structure_block",
-        "minecraft:structure_void", "minecraft:jigsaw", "minecraft:light",
+        "minecraft:structure_void", "minecraft:jigsaw",
         "minecraft:debug_stick", "minecraft:knowledge_book",
         "minecraft:petrified_oak_slab", "minecraft:moving_piston",
         "minecraft:end_portal_frame", // creative-only
