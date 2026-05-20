@@ -123,12 +123,12 @@ public class PriceManager {
         m.put("minecraft:trident",                 1_000_000.0);
         m.put("minecraft:mace",                    2_000_000.0);
         m.put("minecraft:heavy_core",              1_500_000.0); // main Mace component
-        m.put("minecraft:breeze_rod",                150_000.0); // 3 needed for Mace
+        m.put("minecraft:breeze_rod",                  3_000.0); // dropped by Breeze
         m.put("minecraft:trial_spawner",           3_000_000.0);
         m.put("minecraft:reinforced_deepslate",       35_000.0);
         m.put("minecraft:totem_of_undying",          100_000.0);
         m.put("minecraft:nether_star",             5_000_000.0);
-        m.put("minecraft:light",                 100_000_000.0); // admin-only light block
+        m.put("minecraft:light",                       1_000.0); // placeable light source
         m.put("minecraft:wet_sponge",               50_000.0);  // = dry sponge — no furnace arbitrage
         // ── Misc / commonly misclassified ────────────────────────────────────
         m.put("minecraft:string",                    500.0);
