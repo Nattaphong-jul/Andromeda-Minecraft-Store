@@ -28,8 +28,11 @@ public final class EconomyUtils {
     }
 
     private static String shortFmt(double v) {
-        if (v >= 100 || v == Math.floor(v)) return String.format("%.0f", v);
-        return String.format("%.1f", v);
+        // Truncate (floor) to 1 decimal — never round up past the next unit boundary.
+        // +1e-9 guards against IEEE 754 representation errors (e.g. 9.9*10 = 98.999…).
+        double t = Math.floor(v * 10 + 1e-9) / 10.0;
+        if (t >= 100 || t == Math.floor(t)) return String.format("%.0f", t);
+        return String.format("%.1f", t);
     }
 
     /**
