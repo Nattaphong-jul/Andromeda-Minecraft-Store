@@ -29,18 +29,20 @@ public final class RankManager {
 
     public static final Map<String, ChatFormatting> RANKS = new LinkedHashMap<>();
     static {
-        RANKS.put("Unemployed", ChatFormatting.RED);
-        RANKS.put("Salary Man", ChatFormatting.WHITE);
-        RANKS.put("Anutin",     ChatFormatting.BLUE);
-        RANKS.put("CEO",        ChatFormatting.GREEN);
-        RANKS.put("MrBeast",    ChatFormatting.AQUA);
-        RANKS.put("CK",         ChatFormatting.LIGHT_PURPLE);
-        RANKS.put("Elon Musk",  ChatFormatting.GOLD);
+        RANKS.put("Unemployed",   ChatFormatting.RED);
+        RANKS.put("Salary Man",   ChatFormatting.WHITE);
+        RANKS.put("Anutin",       ChatFormatting.BLUE);
+        RANKS.put("CEO",          ChatFormatting.DARK_GREEN);   // dark green — distinct from Jensen Huang
+        RANKS.put("MrBeast",      ChatFormatting.AQUA);
+        RANKS.put("CK",           ChatFormatting.LIGHT_PURPLE);
+        RANKS.put("Jensen Huang", ChatFormatting.GREEN);         // bright green — NVIDIA colour
+        RANKS.put("Elon Musk",    ChatFormatting.GOLD);
     }
 
     public static String rankName(double balance) {
         if (balance >= 500_000_000_000.0) return "Elon Musk";
-        if (balance >= 10_000_000_000.0)  return "CK";
+        if (balance >= 100_000_000_000.0) return "Jensen Huang"; // 100B – 500B
+        if (balance >= 10_000_000_000.0)  return "CK";           // 10B  – 100B
         if (balance >= 1_000_000_000.0)   return "MrBeast";
         if (balance >= 100_000_000.0)     return "CEO";
         if (balance >= 10_000_000.0)      return "Anutin";
@@ -54,14 +56,15 @@ public final class RankManager {
 
     public static String rankAbbrev(String rank) {
         return switch (rank) {
-            case "Unemployed" -> "UEP";
-            case "Salary Man" -> "SM";
-            case "Anutin"     -> "AN";
-            case "CEO"        -> "CEO";
-            case "MrBeast"    -> "MrB";
-            case "CK"         -> "CK";
-            case "Elon Musk"  -> "EM";
-            default           -> "?";
+            case "Unemployed"   -> "UEP";
+            case "Salary Man"   -> "SM";
+            case "Anutin"       -> "AN";
+            case "CEO"          -> "CEO";
+            case "MrBeast"      -> "MrB";
+            case "CK"           -> "CK";
+            case "Jensen Huang" -> "JH";
+            case "Elon Musk"    -> "EM";
+            default             -> "?";
         };
     }
 
@@ -72,9 +75,9 @@ public final class RankManager {
 
     // ── Component builders ────────────────────────────────────────────────────
 
-    /** Prefix shown BEFORE the player name in the overhead: "CK " in rank colour. */
+    /** No overhead prefix — abbreviation removed per user request. */
     public static Component overheadPrefix(String rank) {
-        return Component.literal(rankAbbrev(rank) + " ").withStyle(rankColor(rank));
+        return Component.empty();
     }
 
     /**
