@@ -22,7 +22,7 @@ public class ServerPlayerTabListMixin {
     @Inject(method = "getTabListDisplayName", at = @At("HEAD"), cancellable = true)
     private void andromeda$tabListDisplayName(CallbackInfoReturnable<Component> cir) {
         ServerPlayer player = (ServerPlayer) (Object) this;
-        double balance = RankManager.getCachedBalance(player.getUUID());
+        double balance = RankManager.getCachedWealth(player.getUUID());
         String rank    = RankManager.rankName(balance);
         cir.setReturnValue(RankManager.tabDisplayName(player.getGameProfile().name(), rank));
     }

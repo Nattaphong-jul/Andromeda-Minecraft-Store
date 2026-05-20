@@ -139,6 +139,7 @@ public class QuantityGui extends ChestMenu {
         }
 
         AndromedaEconomy.db.setBalance(sp.getStringUUID(), data.balance - cost);
+        AndromedaEconomy.db.addSpend(sp.getStringUUID(), cost);
 
         // Give items in full stacks
         ItemStack template = ShopGui.createStack(itemId, 1);

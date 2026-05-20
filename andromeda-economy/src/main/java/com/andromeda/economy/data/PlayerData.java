@@ -5,11 +5,13 @@ public class PlayerData {
     public final String username;
     public double balance;
     public int kills;
+    public double totalSpend;
 
-    public PlayerData(String uuid, String username, double balance, int kills) {
-        this.uuid = uuid;
-        this.username = username;
-        this.balance = balance;
-        this.kills = kills;
+    public PlayerData(String uuid, String username, double balance, int kills, double totalSpend) {
+        this.uuid      = uuid;
+        this.username  = username;
+        this.balance   = balance;
+        this.kills     = kills;
+        this.totalSpend = totalSpend;
     }
 }

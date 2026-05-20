@@ -86,19 +86,20 @@ public final class RankManager {
             .append(Component.literal(" [" + rank + "]").withStyle(rankColor(rank)));
     }
 
-    // ── Per-player balance cache (avoids DB calls in hot paths) ───────────────
+    // ── Per-player total wealth cache (balance + ender chest assets) ──────────
 
-    private static final Map<UUID, Double> BALANCE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<UUID, Double> WEALTH_CACHE = new ConcurrentHashMap<>();
 
-    public static void cacheBalance(UUID uuid, double balance) {
-        BALANCE_CACHE.put(uuid, balance);
+    /** Call with balance + enderChestAssets so tab-list Mixin uses the correct rank. */
+    public static void cacheWealth(UUID uuid, double totalWealth) {
+        WEALTH_CACHE.put(uuid, totalWealth);
     }
 
-    public static double getCachedBalance(UUID uuid) {
-        return BALANCE_CACHE.getOrDefault(uuid, 0.0);
+    public static double getCachedWealth(UUID uuid) {
+        return WEALTH_CACHE.getOrDefault(uuid, 0.0);
     }
 
     public static void removeCache(UUID uuid) {
-        BALANCE_CACHE.remove(uuid);
+        WEALTH_CACHE.remove(uuid);
     }
 }

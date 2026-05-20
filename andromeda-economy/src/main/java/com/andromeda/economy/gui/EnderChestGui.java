@@ -86,6 +86,17 @@ public class EnderChestGui extends ChestMenu {
         }
 
         sp.getEnderChestInventory().stopOpen(sp); // trigger the block close animation
+
+        // Calculate and cache total sell-value of all ender chest items for the HUD
+        double assets = 0.0;
+        for (int i = 0; i < combined.getContainerSize(); i++) {
+            net.minecraft.world.item.ItemStack stack = combined.getItem(i);
+            if (stack.isEmpty()) continue;
+            double sell = AndromedaEconomy.prices.getSellPriceForStack(stack);
+            if (sell > 0) assets += sell * stack.getCount();
+        }
+        AndromedaEconomy.enderChestAssets.put(sp.getUUID(), assets);
+        AndromedaEconomy.hud.update(sp); // refresh HUD with new asset value
     }
 
     @Override

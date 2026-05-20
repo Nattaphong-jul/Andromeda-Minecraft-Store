@@ -33,6 +33,9 @@ public class DatabaseManager {
                         balance  REAL    DEFAULT 0.0,
                         kills    INTEGER DEFAULT 0
                     )""");
+                // Non-destructive migration: add total_spend if it doesn't exist yet
+                try { s.execute("ALTER TABLE players ADD COLUMN total_spend REAL DEFAULT 0.0"); }
+                catch (SQLException ignored) { /* already exists */ }
                 s.execute("""
                     CREATE TABLE IF NOT EXISTS ender_chest_ext (
                         uuid TEXT    NOT NULL,
@@ -67,12 +70,12 @@ public class DatabaseManager {
 
     public PlayerData getPlayer(String uuid) {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT uuid, username, balance, kills FROM players WHERE uuid=?")) {
+                "SELECT uuid, username, balance, kills, total_spend FROM players WHERE uuid=?")) {
             ps.setString(1, uuid);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return new PlayerData(rs.getString("uuid"), rs.getString("username"),
-                        rs.getDouble("balance"), rs.getInt("kills"));
+                        rs.getDouble("balance"), rs.getInt("kills"), rs.getDouble("total_spend"));
             }
         } catch (SQLException e) {
             AndromedaEconomy.LOGGER.error("getPlayer failed for {}", uuid, e);
@@ -82,12 +85,12 @@ public class DatabaseManager {
 
     public PlayerData getPlayerByName(String username) {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT uuid, username, balance, kills FROM players WHERE LOWER(username)=LOWER(?)")) {
+                "SELECT uuid, username, balance, kills, total_spend FROM players WHERE LOWER(username)=LOWER(?)")) {
             ps.setString(1, username);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return new PlayerData(rs.getString("uuid"), rs.getString("username"),
-                        rs.getDouble("balance"), rs.getInt("kills"));
+                        rs.getDouble("balance"), rs.getInt("kills"), rs.getDouble("total_spend"));
             }
         } catch (SQLException e) {
             AndromedaEconomy.LOGGER.error("getPlayerByName failed for {}", username, e);
@@ -155,6 +158,17 @@ public class DatabaseManager {
         } catch (SQLException e) {
             AndromedaEconomy.LOGGER.error("getAllUsernames failed", e);
             return List.of();
+        }
+    }
+
+    public void addSpend(String uuid, double amount) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE players SET total_spend = total_spend + ? WHERE uuid=?")) {
+            ps.setDouble(1, amount);
+            ps.setString(2, uuid);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            AndromedaEconomy.LOGGER.error("addSpend failed for {}", uuid, e);
         }
     }
 

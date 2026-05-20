@@ -70,6 +70,9 @@ public class AndromedaEconomy implements ModInitializer {
      */
     public static final Set<UUID> CLIENT_MOD_PLAYERS = new HashSet<>();
 
+    /** Cached total sell-value of each player's ender chest (real + extended slots). */
+    public static final Map<UUID, Double> enderChestAssets = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Override
     public void onInitialize() {
         db         = new DatabaseManager();
