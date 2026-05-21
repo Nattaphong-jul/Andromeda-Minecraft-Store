@@ -120,9 +120,9 @@ public class EnderChestGui extends ChestMenu {
             // Ender chest area → player inventory
             if (!this.moveItemStackTo(stack, 54, 90, true)) return ItemStack.EMPTY;
         } else if (slot >= 54) {
-            // Player inventory → try extended first, then real ender chest
-            if (!this.moveItemStackTo(stack, REAL_SLOTS, REAL_SLOTS + EXT_SLOTS, false)
-                    && !this.moveItemStackTo(stack, 0, REAL_SLOTS, false)) {
+            // Player inventory → real ender chest first (rows 1-3), then extended storage (rows 4-6)
+            if (!this.moveItemStackTo(stack, 0, REAL_SLOTS, false)
+                    && !this.moveItemStackTo(stack, REAL_SLOTS, REAL_SLOTS + EXT_SLOTS, false)) {
                 return ItemStack.EMPTY;
             }
         } else {

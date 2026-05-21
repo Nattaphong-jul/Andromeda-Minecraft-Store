@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ClientboundPlayChannelEvents;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.block.EnderChestBlock;
+import net.minecraft.world.level.block.entity.EnderChestBlockEntity;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -181,6 +182,10 @@ public class AndromedaEconomy implements ModInitializer {
             if (world.isClientSide()) return InteractionResult.PASS;
             if (!(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (world.getBlockState(hitResult.getBlockPos()).getBlock() instanceof EnderChestBlock) {
+                // Register the block entity so startOpen/stopOpen trigger the lid animation
+                if (world.getBlockEntity(hitResult.getBlockPos()) instanceof EnderChestBlockEntity chest) {
+                    sp.getEnderChestInventory().setActiveChest(chest);
+                }
                 EnderChestGui.open(sp);
                 return InteractionResult.SUCCESS;
             }
