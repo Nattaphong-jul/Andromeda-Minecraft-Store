@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.ItemContainerContents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -60,6 +61,21 @@ public class ItemStackTooltipMixin {
         if (sellPrice <= 0) return;
 
         double total = sellPrice * self.getCount();
+
+        // If this item has container contents (shulker box etc.), add their sell value too
+        ItemContainerContents contents = self.get(DataComponents.CONTAINER);
+        if (contents != null) {
+            var it = contents.nonEmptyItemCopyStream().iterator();
+            while (it.hasNext()) {
+                var inner = it.next();
+                Identifier innerId = BuiltInRegistries.ITEM.getKey(inner.getItem());
+                if (innerId != null) {
+                    double innerPrice = PriceCache.getSellPrice(innerId.toString());
+                    if (innerPrice > 0) total += innerPrice * inner.getCount();
+                }
+            }
+        }
+
         String newPriceText = EconomyUtils.compact(total) + " THB";
 
         List<Component> lines = cir.getReturnValue();

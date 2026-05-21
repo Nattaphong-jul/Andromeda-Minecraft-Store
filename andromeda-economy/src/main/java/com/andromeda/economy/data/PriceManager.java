@@ -5,6 +5,7 @@ import com.andromeda.economy.EconomyUtils;
 import com.google.gson.*;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -471,6 +472,29 @@ public class PriceManager {
         }
         Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return id != null ? getSellPrice(id.toString()) : -1;
+    }
+
+    /**
+     * Returns the total sell value of a stack, including the sell value of any items
+     * stored inside it (e.g. shulker box contents).  Count is already factored in.
+     *
+     *   Regular item: getSellPriceForStack(stack) * stack.getCount()
+     *   Shulker box:  (shulker_price * count) + sum(item_price * item_count for each item inside)
+     */
+    public double getTotalSellValue(ItemStack stack) {
+        double ownPrice = getSellPriceForStack(stack);
+        double ownValue = ownPrice > 0 ? ownPrice * stack.getCount() : 0;
+
+        ItemContainerContents contents = stack.get(DataComponents.CONTAINER);
+        if (contents == null) return ownValue;
+
+        double contentsValue = contents.nonEmptyItemCopyStream()
+            .mapToDouble(inner -> {
+                double p = getSellPriceForStack(inner);
+                return p > 0 ? p * inner.getCount() : 0;
+            })
+            .sum();
+        return ownValue + contentsValue;
     }
 
     public double getSellPrice(String itemId) {

@@ -83,10 +83,11 @@ public class SellGui extends ChestMenu {
             ItemStack stack = inv.getItem(i);
             if (stack.isEmpty()) continue;
 
-            double sellPrice = AndromedaEconomy.prices.getSellPriceForStack(stack);
+            // getTotalSellValue handles shulker box contents automatically
+            double totalValue = AndromedaEconomy.prices.getTotalSellValue(stack);
 
-            if (sellPrice > 0) {
-                total += sellPrice * stack.getCount();
+            if (totalValue > 0) {
+                total += totalValue;
                 inv.setItem(i, ItemStack.EMPTY);
                 hadSellable = true;
             } else {
