@@ -150,6 +150,7 @@ public class ScoreboardHud {
         String uuid = player.getStringUUID();
         initialised.remove(uuid);
         RankManager.removeCache(player.getUUID());
+        removeOverheadTeam(player);
         Objective obj = objectives.remove(uuid);
         if (obj == null) return;
         player.connection.send(
@@ -158,10 +159,34 @@ public class ScoreboardHud {
 
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Each player gets their own personal scoreboard team so the overhead prefix
+     * can be tailored to their name length.  Full rank name is shown when it fits
+     * (prefix + name ≤ 24 chars), otherwise the short abbreviation is used.
+     */
     private static void assignOverheadTeam(ServerPlayer player, String rank) {
         var scoreboard = player.level().getServer().getScoreboard();
-        var team = scoreboard.getPlayerTeam(RankManager.teamName(rank));
-        if (team != null) scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
+        String teamName = "ae_" + player.getStringUUID().replace("-", "").substring(0, 14);
+
+        var team = scoreboard.getPlayerTeam(teamName);
+        if (team == null) {
+            team = scoreboard.addPlayerTeam(teamName);
+            team.setNameTagVisibility(net.minecraft.world.scores.Team.Visibility.ALWAYS);
+            team.setColor(net.minecraft.ChatFormatting.RESET);
+        }
+
+        team.setPlayerPrefix(RankManager.overheadPrefix(rank, player.getGameProfile().name()));
+        scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
+    }
+
+    /** Clean up the player's personal team when they leave. */
+    private static void removeOverheadTeam(ServerPlayer player) {
+        try {
+            var scoreboard = player.level().getServer().getScoreboard();
+            String teamName = "ae_" + player.getStringUUID().replace("-", "").substring(0, 14);
+            var team = scoreboard.getPlayerTeam(teamName);
+            if (team != null) scoreboard.removePlayerTeam(team);
+        } catch (Exception ignored) {}
     }
 
     private static void sendLine(ServerPlayer player, String objName, String holder,

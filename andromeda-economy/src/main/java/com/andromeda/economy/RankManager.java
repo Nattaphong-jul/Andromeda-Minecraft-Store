@@ -75,9 +75,21 @@ public final class RankManager {
 
     // ── Component builders ────────────────────────────────────────────────────
 
-    /** No overhead prefix — abbreviation removed per user request. */
-    public static Component overheadPrefix(String rank) {
-        return Component.empty();
+    /**
+     * Returns the overhead nametag prefix for a player.
+     * Uses the full rank name if it fits (prefix + space + playerName ≤ 24 chars),
+     * otherwise falls back to the short abbreviation.
+     *
+     * Examples at threshold 24:
+     *   "Anutin Player1"          →  "Anutin " prefix  (14 chars total ✓)
+     *   "Jensen Huang Player123"  →  "JH " prefix       (25 chars total → abbreviate)
+     *   "CEO VeryLongPlayerName"  →  "CEO " prefix      (22 chars total ✓)
+     */
+    public static Component overheadPrefix(String rank, String playerName) {
+        String full   = rank + " ";
+        String abbrev = rankAbbrev(rank) + " ";
+        String chosen = (full.length() + playerName.length() <= 24) ? full : abbrev;
+        return Component.literal(chosen).withStyle(rankColor(rank));
     }
 
     /**
