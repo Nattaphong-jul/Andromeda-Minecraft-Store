@@ -44,6 +44,7 @@ public class QuantityGui extends ChestMenu {
     // Stored so Cancel can return the player to the exact shop page they came from
     private final List<Map.Entry<String, PriceManager.PriceEntry>> shopItems;
     private final int shopPage;
+    private long lastBuyMs = 0; // debounce: prevents rapid double-clicks from buying twice
 
     private QuantityGui(int syncId, Inventory playerInv, SimpleContainer inv,
                         String itemId, PriceManager.PriceEntry entry,
@@ -118,7 +119,13 @@ public class QuantityGui extends ChestMenu {
         if (!(clicker instanceof ServerPlayer sp)) return;
 
         for (int i = 0; i < QTY_SLOTS.length; i++) {
-            if (slotId == QTY_SLOTS[i]) { attemptPurchase(sp, QUANTITIES[i]); return; }
+            if (slotId == QTY_SLOTS[i]) {
+                long now = System.currentTimeMillis();
+                if (now - lastBuyMs < 400) return; // ignore rapid repeat clicks
+                lastBuyMs = now;
+                attemptPurchase(sp, QUANTITIES[i]);
+                return;
+            }
         }
         if (slotId == SLOT_CANCEL) {
             sp.closeContainer();
