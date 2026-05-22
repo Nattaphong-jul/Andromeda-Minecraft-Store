@@ -149,7 +149,9 @@ public class PriceManager {
         m.put("minecraft:honey_bottle",            1_000.0);
         m.put("minecraft:ink_sac",                   300.0);
         m.put("minecraft:glow_ink_sac",            5_000.0);
-        m.put("minecraft:sugar",                     200.0);
+        m.put("minecraft:sugar",                   1_000.0);
+        m.put("minecraft:sugar_cane",                500.0);
+        m.put("minecraft:bamboo",                    500.0); // = sugarcane
         m.put("minecraft:egg",                        50.0);
         m.put("minecraft:wheat",                     300.0);
         m.put("minecraft:wheat_seeds",                50.0);
@@ -204,7 +206,7 @@ public class PriceManager {
         m.put("minecraft:warped_stem",             2_000.0);
         m.put("minecraft:stripped_crimson_stem",   1_800.0);
         m.put("minecraft:stripped_warped_stem",    1_800.0);
-        m.put("minecraft:bamboo_block",            1_500.0);
+        m.put("minecraft:bamboo_block",            4_500.0); // 9 × bamboo
         ANCHORS = Collections.unmodifiableMap(m);
     }
 
