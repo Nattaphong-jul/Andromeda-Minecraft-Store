@@ -92,6 +92,7 @@ public class AndromedaEconomy implements ModInitializer {
             PayCommand.register(dispatcher);
             BalanceCommand.register(dispatcher);
             NightVisionCommand.register(dispatcher);
+            BankCommand.register(dispatcher);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
