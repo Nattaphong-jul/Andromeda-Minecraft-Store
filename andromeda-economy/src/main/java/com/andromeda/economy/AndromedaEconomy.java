@@ -99,6 +99,7 @@ public class AndromedaEconomy implements ModInitializer {
             registryAccess = server.registryAccess();
             prices.addEnchantedBooks(server);
             prices.addPotions(server);
+            ScoreboardHud.cleanupLegacyTeams(server); // remove stale rank-abbrev teams
             // Fetch live Bitcoin price immediately on start
             bitcoinPrice.fetchAndApply(server);
         });

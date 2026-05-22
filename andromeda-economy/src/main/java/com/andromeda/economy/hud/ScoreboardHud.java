@@ -168,6 +168,10 @@ public class ScoreboardHud {
         var scoreboard = player.level().getServer().getScoreboard();
         String teamName = "ae_" + player.getStringUUID().replace("-", "").substring(0, 14);
 
+        // Remove from any current team first — prevents duplicate membership that
+        // causes AMP (and some server monitors) to show the player multiple times.
+        scoreboard.removePlayerFromTeam(player.getScoreboardName());
+
         var team = scoreboard.getPlayerTeam(teamName);
         if (team == null) {
             team = scoreboard.addPlayerTeam(teamName);
@@ -177,6 +181,19 @@ public class ScoreboardHud {
 
         team.setPlayerPrefix(RankManager.overheadPrefix(rank, player.getGameProfile().name()));
         scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
+    }
+
+    /** Removes old rank-abbreviation teams left over from versions before per-player teams. */
+    public static void cleanupLegacyTeams(net.minecraft.server.MinecraftServer server) {
+        var scoreboard = server.getScoreboard();
+        // Old teams were named ae_<abbrev> where abbrev is ≤4 chars (e.g. ae_an, ae_ceo, ae_mrb)
+        // Per-player teams are ae_<14 hex chars> — easily distinguishable by length
+        new java.util.ArrayList<>(scoreboard.getPlayerTeams()).forEach(team -> {
+            String n = team.getName();
+            if (n.startsWith("ae_") && n.length() <= 7) { // ae_ + up to 4 chars = max 7
+                scoreboard.removePlayerTeam(team);
+            }
+        });
     }
 
     /** Clean up the player's personal team when they leave. */
