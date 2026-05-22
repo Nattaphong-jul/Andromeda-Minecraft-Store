@@ -129,6 +129,7 @@ public class PriceManager {
         m.put("minecraft:reinforced_deepslate",       35_000.0);
         m.put("minecraft:totem_of_undying",          100_000.0);
         m.put("minecraft:nether_star",             5_000_000.0);
+        m.put("minecraft:beacon",                  5_000_000.0); // main component is Nether Star
         m.put("minecraft:light",                       1_000.0); // placeable light source
         m.put("minecraft:wet_sponge",               50_000.0);  // = dry sponge — no furnace arbitrage
         // ── Misc / commonly misclassified ────────────────────────────────────

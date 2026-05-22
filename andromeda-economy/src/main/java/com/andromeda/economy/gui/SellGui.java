@@ -30,16 +30,18 @@ import java.util.List;
 public class SellGui extends ChestMenu {
 
     private static final int SELL_SLOTS   = 45;   // 5 rows × 9
-    private static final int SLOT_CONFIRM = 53;   // last slot in 54-slot chest
+    private static final int SLOT_CLOSE   = 45;   // bottom-left corner
+    private static final int SLOT_CONFIRM = 53;   // bottom-right corner
 
     private final SimpleContainer inv;
 
     private SellGui(int syncId, Inventory playerInv, SimpleContainer inv, ServerPlayer player) {
         super(MenuType.GENERIC_9x6, syncId, playerInv, inv, 6);
         this.inv = inv;
+        inv.setItem(SLOT_CLOSE, makeClose());      // bottom-left
         ItemStack pad = glass();
-        for (int i = SELL_SLOTS; i < SLOT_CONFIRM; i++) inv.setItem(i, pad.copy());
-        inv.setItem(SLOT_CONFIRM, makeConfirm());
+        for (int i = SELL_SLOTS + 1; i < SLOT_CONFIRM; i++) inv.setItem(i, pad.copy());
+        inv.setItem(SLOT_CONFIRM, makeConfirm()); // bottom-right
     }
 
     public static void open(ServerPlayer player) {
@@ -57,6 +59,14 @@ public class SellGui extends ChestMenu {
         return s;
     }
 
+    private static ItemStack makeClose() {
+        ItemStack s = new ItemStack(Items.BARRIER);
+        s.set(DataComponents.CUSTOM_NAME,
+            Component.literal("Close").withStyle(ChatFormatting.RED));
+        ShopGui.markDisplay(s);
+        return s;
+    }
+
     private static ItemStack makeConfirm() {
         ItemStack s = new ItemStack(Items.GREEN_DYE);
         s.set(DataComponents.CUSTOM_NAME,
@@ -70,6 +80,7 @@ public class SellGui extends ChestMenu {
         if (!(clicker instanceof ServerPlayer sp)) return;
         if (slotId >= SELL_SLOTS && slotId < 54) {
             if (slotId == SLOT_CONFIRM) processSale(sp);
+            else if (slotId == SLOT_CLOSE) sp.closeContainer();
             return;
         }
         super.clicked(slotId, button, type, clicker);
@@ -108,7 +119,7 @@ public class SellGui extends ChestMenu {
         ).withStyle(ChatFormatting.GREEN));
         AndromedaEconomy.playMoneySound(sp);
         AndromedaEconomy.hud.update(sp);
-        sp.closeContainer();
+        // Window stays open — player can keep selling without reopening
     }
 
     @Override
