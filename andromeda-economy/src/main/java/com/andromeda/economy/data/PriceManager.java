@@ -149,9 +149,8 @@ public class PriceManager {
         m.put("minecraft:honey_bottle",            1_000.0);
         m.put("minecraft:ink_sac",                   300.0);
         m.put("minecraft:glow_ink_sac",            5_000.0);
-        m.put("minecraft:sugar",                   1_000.0);
-        m.put("minecraft:sugar_cane",                500.0);
-        m.put("minecraft:bamboo",                    500.0); // = sugarcane
+        m.put("minecraft:sugar",                   4_000.0); // 1 sugarcane → 1 sugar
+        m.put("minecraft:sugar_cane",              4_000.0); // ≈ bamboo tier
         m.put("minecraft:egg",                        50.0);
         m.put("minecraft:wheat",                     300.0);
         m.put("minecraft:wheat_seeds",                50.0);
@@ -206,7 +205,26 @@ public class PriceManager {
         m.put("minecraft:warped_stem",             2_000.0);
         m.put("minecraft:stripped_crimson_stem",   1_800.0);
         m.put("minecraft:stripped_warped_stem",    1_800.0);
-        m.put("minecraft:bamboo_block",            4_500.0); // 9 × bamboo
+        // ── Bamboo products (bamboo ≈ 4,600 from tier pricing) ─────────────────
+        // 1 bamboo → 2 bamboo planks → plank ≈ 2,300
+        m.put("minecraft:stripped_bamboo",         4_600.0); // 1:1 with bamboo
+        m.put("minecraft:bamboo_block",           41_400.0); // 9 bamboo
+        m.put("minecraft:bamboo_planks",           2_300.0); // bamboo / 2
+        m.put("minecraft:bamboo_mosaic",           2_300.0); // same material
+        m.put("minecraft:bamboo_slab",             1_150.0); // plank / 2
+        m.put("minecraft:bamboo_mosaic_slab",      1_150.0);
+        m.put("minecraft:bamboo_stairs",           3_450.0); // plank × 1.5
+        m.put("minecraft:bamboo_mosaic_stairs",    3_450.0);
+        m.put("minecraft:bamboo_door",             4_600.0); // 6 planks → 3 doors
+        m.put("minecraft:bamboo_trapdoor",         6_900.0); // 6 planks → 2 trapdoors
+        m.put("minecraft:bamboo_fence",            3_000.0); // 4 planks + 2 sticks → 3 fences
+        m.put("minecraft:bamboo_fence_gate",       9_200.0); // 4 planks → 1 gate
+        m.put("minecraft:bamboo_button",           2_300.0); // 1 plank
+        m.put("minecraft:bamboo_pressure_plate",   4_600.0); // 2 planks
+        m.put("minecraft:bamboo_sign",             4_600.0); // 6 planks → 3 signs
+        m.put("minecraft:bamboo_hanging_sign",     5_000.0);
+        m.put("minecraft:bamboo_raft",             5_000.0);
+        m.put("minecraft:bamboo_chest_raft",      10_000.0);
         ANCHORS = Collections.unmodifiableMap(m);
     }
 
