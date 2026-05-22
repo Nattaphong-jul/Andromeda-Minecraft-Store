@@ -149,8 +149,8 @@ public class PriceManager {
         m.put("minecraft:honey_bottle",            1_000.0);
         m.put("minecraft:ink_sac",                   300.0);
         m.put("minecraft:glow_ink_sac",            5_000.0);
-        m.put("minecraft:sugar",                   4_000.0); // 1 sugarcane → 1 sugar
-        m.put("minecraft:sugar_cane",              4_000.0); // ≈ bamboo tier
+        m.put("minecraft:sugar",                   5_000.0); // slightly more than sugarcane
+        m.put("minecraft:sugar_cane",              4_000.0);
         m.put("minecraft:egg",                        50.0);
         m.put("minecraft:wheat",                     300.0);
         m.put("minecraft:wheat_seeds",                50.0);
@@ -205,8 +205,10 @@ public class PriceManager {
         m.put("minecraft:warped_stem",             2_000.0);
         m.put("minecraft:stripped_crimson_stem",   1_800.0);
         m.put("minecraft:stripped_warped_stem",    1_800.0);
-        // ── Bamboo products (bamboo ≈ 4,600 from tier pricing) ─────────────────
-        // 1 bamboo → 2 bamboo planks → plank ≈ 2,300
+        // ── Bamboo products (bamboo = 4,600) ────────────────────────────────────
+        // Anchoring bamboo explicitly because adding the product anchors below
+        // shifts the RNG sequence, which would otherwise change bamboo's tier price.
+        m.put("minecraft:bamboo",                  4_600.0);
         m.put("minecraft:stripped_bamboo",         4_600.0); // 1:1 with bamboo
         m.put("minecraft:bamboo_block",           41_400.0); // 9 bamboo
         m.put("minecraft:bamboo_planks",           2_300.0); // bamboo / 2
