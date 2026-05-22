@@ -56,6 +56,18 @@ public class MobRewardManager {
         DEFAULTS.put("minecraft:ender_dragon",  2_000_000.0);
         // ── New / trial chambers ─────────────────────────────────────────────
         DEFAULTS.put("minecraft:breeze",           10_000.0);
+        DEFAULTS.put("minecraft:bogged",            1_000.0); // new skeleton variant
+        DEFAULTS.put("minecraft:creaking",         40_000.0); // pale garden mob
+        DEFAULTS.put("minecraft:warden",          600_000.0); // hardest to kill
+        DEFAULTS.put("minecraft:illusioner",      100_000.0); // rare
+        DEFAULTS.put("minecraft:vex",               9_000.0); // evoker minion
+        // ── Neutral mobs that can be hostile ─────────────────────────────────
+        DEFAULTS.put("minecraft:piglin",            1_000.0);
+        DEFAULTS.put("minecraft:zombie_villager",   1_000.0); // = zombie
+        DEFAULTS.put("minecraft:trader_llama",          0.0); // no reward or penalty
+        // ── Penalties (negative = deduct from balance) ────────────────────────
+        DEFAULTS.put("minecraft:allay",            -5_000.0); // peaceful helper mob
+        DEFAULTS.put("minecraft:bee",                -500.0); // naturally defensive
     }
 
     private final Map<String, Double> rewards = new HashMap<>();
@@ -88,16 +100,34 @@ public class MobRewardManager {
         double reward = AndromedaEconomy.mobRewards.rewards.getOrDefault(mobIdStr, 50.0);
         String mobName = mob.getType().getDescription().getString();
 
-        AndromedaEconomy.db.addBalance(player.getStringUUID(), reward);
-        AndromedaEconomy.db.incrementKills(player.getStringUUID());
+        if (reward == 0) return; // e.g. trader llama — no effect, no message
 
-        player.sendSystemMessage(
-            Component.literal("You earned ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal(EconomyUtils.format(reward)).withStyle(ChatFormatting.GREEN))
-                .append(Component.literal(" THB for killing " + mobName).withStyle(ChatFormatting.WHITE))
-        );
-
-        AndromedaEconomy.playMoneySound(player);
+        if (reward > 0) {
+            // ── Normal reward ─────────────────────────────────────────────────
+            AndromedaEconomy.db.addBalance(player.getStringUUID(), reward);
+            AndromedaEconomy.db.incrementKills(player.getStringUUID());
+            player.sendSystemMessage(
+                Component.literal("You earned ").withStyle(ChatFormatting.WHITE)
+                    .append(Component.literal(EconomyUtils.format(reward)).withStyle(ChatFormatting.GREEN))
+                    .append(Component.literal(" THB for killing " + mobName).withStyle(ChatFormatting.WHITE))
+            );
+            AndromedaEconomy.playMoneySound(player);
+        } else {
+            // ── Penalty (reward is negative) ──────────────────────────────────
+            double penalty = -reward; // positive amount for display
+            PlayerData data = AndromedaEconomy.db.getPlayer(player.getStringUUID());
+            if (data != null) {
+                double newBalance = Math.max(0, data.balance - penalty);
+                AndromedaEconomy.db.setBalance(player.getStringUUID(), newBalance);
+            }
+            // Penalty kills do NOT count toward the kill counter
+            player.sendSystemMessage(
+                Component.literal("☠ You lost ").withStyle(ChatFormatting.RED)
+                    .append(Component.literal(EconomyUtils.format(penalty)).withStyle(ChatFormatting.YELLOW))
+                    .append(Component.literal(" THB for killing " + mobName + "!").withStyle(ChatFormatting.RED))
+            );
+            AndromedaEconomy.playSound(player, net.minecraft.sounds.SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
+        }
 
         AndromedaEconomy.hud.update(player);
     }
