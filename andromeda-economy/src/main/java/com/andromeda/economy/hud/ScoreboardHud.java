@@ -3,7 +3,9 @@ package com.andromeda.economy.hud;
 import com.andromeda.economy.AndromedaEconomy;
 import com.andromeda.economy.EconomyUtils;
 import com.andromeda.economy.RankManager;
+import com.andromeda.economy.data.LotteryManager;
 import com.andromeda.economy.data.PlayerData;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -42,14 +44,15 @@ import java.util.Set;
  */
 public class ScoreboardHud {
 
-    private static final String LINE_SP1   = "ae_s1";
-    private static final String LINE_BAL   = "ae_bl";
-    private static final String LINE_ASSET = "ae_at";
-    private static final String LINE_KLS   = "ae_kl";
-    private static final String LINE_SPEND = "ae_sd";
-    private static final String LINE_RANK  = "ae_rk";
-    private static final String LINE_SP2   = "ae_s2";
-    private static final String LINE_PING  = "ae_pg";
+    private static final String LINE_SP1     = "ae_s1";
+    private static final String LINE_BAL     = "ae_bl";
+    private static final String LINE_ASSET   = "ae_at";
+    private static final String LINE_KLS     = "ae_kl";
+    private static final String LINE_LOTTERY = "ae_lt";
+    private static final String LINE_SPEND   = "ae_sd";
+    private static final String LINE_RANK    = "ae_rk";
+    private static final String LINE_SP2     = "ae_s2";
+    private static final String LINE_PING    = "ae_pg";
 
     private final Map<String, Objective> objectives = new HashMap<>();
     private final Set<String> initialised = new HashSet<>();
@@ -87,26 +90,29 @@ public class ScoreboardHud {
         player.connection.send(new ClientboundSetObjectivePacket(obj, mode));
         player.connection.send(new ClientboundSetDisplayObjectivePacket(DisplaySlot.SIDEBAR, obj));
 
-        // Spacer (8)
-        sendLine(player, obj.getName(), LINE_SP1, 8, Component.literal(" "));
+        // Spacer (9)
+        sendLine(player, obj.getName(), LINE_SP1, 9, Component.literal(" "));
 
-        // B Money (7)
-        sendLine(player, obj.getName(), LINE_BAL, 7,
+        // B Money (8)
+        sendLine(player, obj.getName(), LINE_BAL, 8,
             Component.literal("B ").withStyle(ChatFormatting.GREEN)
                 .append(Component.literal("Money ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(EconomyUtils.compact(data.balance)).withStyle(ChatFormatting.GREEN)));
 
-        // A Asset (6)
-        sendLine(player, obj.getName(), LINE_ASSET, 6,
+        // A Asset (7)
+        sendLine(player, obj.getName(), LINE_ASSET, 7,
             Component.literal("A ").withStyle(ChatFormatting.YELLOW)
                 .append(Component.literal("Asset ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(EconomyUtils.compact(assets)).withStyle(ChatFormatting.YELLOW)));
 
-        // ⚔ Kills (5)
-        sendLine(player, obj.getName(), LINE_KLS, 5,
+        // ⚔ Kills (6)
+        sendLine(player, obj.getName(), LINE_KLS, 6,
             Component.literal("⚔ ").withStyle(ChatFormatting.RED)
                 .append(Component.literal("Kills ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(EconomyUtils.compact(data.kills)).withStyle(ChatFormatting.RED)));
+
+        // ⏱ Lottery (5)
+        sendLine(player, obj.getName(), LINE_LOTTERY, 5, buildLotteryLine(player.level().getServer()));
 
         // $ Spend (4)
         sendLine(player, obj.getName(), LINE_SPEND, 4,
@@ -144,6 +150,30 @@ public class ScoreboardHud {
         sendLine(player, obj.getName(), LINE_PING, 1,
             Component.literal("Ping (" + player.connection.latency() + " ms)")
                 .withStyle(ChatFormatting.WHITE));
+    }
+
+    public void updateLotteryLine(ServerPlayer player) {
+        Objective obj = objectives.get(player.getStringUUID());
+        if (obj == null || !initialised.contains(player.getStringUUID())) return;
+        sendLine(player, obj.getName(), LINE_LOTTERY, 5, buildLotteryLine(player.level().getServer()));
+    }
+
+    private static net.minecraft.network.chat.MutableComponent buildLotteryLine(MinecraftServer server) {
+        LotteryManager lottery = AndromedaEconomy.lottery;
+        if (lottery == null) {
+            return Component.literal("⏱ ").withStyle(ChatFormatting.YELLOW)
+                .append(Component.literal("Lottery").withStyle(ChatFormatting.WHITE));
+        }
+        if (lottery.isResultWindowActive()) {
+            return Component.literal("⏱ ").withStyle(ChatFormatting.YELLOW)
+                .append(Component.literal("Showing Result").withStyle(ChatFormatting.YELLOW));
+        }
+        long ticks = lottery.getTicksUntilDraw(server);
+        long days  = ticks / 24000;
+        long hours = (ticks % 24000) / 1000;
+        return Component.literal("⏱ ").withStyle(ChatFormatting.YELLOW)
+            .append(Component.literal("Lottery ").withStyle(ChatFormatting.WHITE))
+            .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.YELLOW));
     }
 
     public void remove(ServerPlayer player) {

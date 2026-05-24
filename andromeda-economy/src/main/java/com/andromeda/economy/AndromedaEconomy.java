@@ -1,6 +1,7 @@
 package com.andromeda.economy;
 
 import com.andromeda.economy.command.*;
+import com.andromeda.economy.data.LotteryManager;
 import com.andromeda.economy.data.*;
 import com.andromeda.economy.hud.ScoreboardHud;
 import com.andromeda.economy.network.PriceMapPayload;
@@ -59,6 +60,7 @@ public class AndromedaEconomy implements ModInitializer {
     public static PriceManager prices;
     public static MobRewardManager mobRewards;
     public static ScoreboardHud hud;
+    public static LotteryManager lottery;
     public static RegistryAccess registryAccess;
     public static BitcoinPriceService bitcoinPrice;
 
@@ -80,6 +82,7 @@ public class AndromedaEconomy implements ModInitializer {
         prices     = new PriceManager();
         mobRewards = new MobRewardManager();
         hud        = new ScoreboardHud();
+        lottery    = new LotteryManager();
         bitcoinPrice = new BitcoinPriceService();
         prices.initBitcoin(BitcoinPriceService.FALLBACK_PRICE); // seed before API call
 
@@ -94,6 +97,7 @@ public class AndromedaEconomy implements ModInitializer {
             NightVisionCommand.register(dispatcher);
             BankCommand.register(dispatcher);
             SpCommand.register(dispatcher);
+            LotteryCommand.register(dispatcher);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -109,6 +113,7 @@ public class AndromedaEconomy implements ModInitializer {
             ServerPlayer player = handler.player;
             db.ensurePlayer(player.getStringUUID(), player.getGameProfile().name());
             hud.update(player);
+            lottery.onPlayerLogin(player);
             // canSend() is NOT reliable here — channel negotiation happens after JOIN fires.
             // We detect the client mod via ClientboundPlayChannelEvents.REGISTER below.
             // For now just run the server-side fallback; it will be undone if client mod present.
@@ -162,6 +167,8 @@ public class AndromedaEconomy implements ModInitializer {
             int tick = server.getTickCount();
             // Refresh Bitcoin price every 15 minutes (18 000 ticks)
             if (tick % 18_000 == 0 && tick > 0) bitcoinPrice.fetchAndApply(server);
+            // Lottery draw timing (checked every tick for accuracy)
+            lottery.tick(server);
             if (tick % 20 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     hud.updatePingOnly(player);
@@ -169,6 +176,7 @@ public class AndromedaEconomy implements ModInitializer {
             }
             if (tick % 100 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    hud.updateLotteryLine(player);
                     if (CLIENT_MOD_PLAYERS.contains(player.getUUID())) {
                         // Keep inventory clean for client-mod players so picked-up items
                         // with leftover price lore get cleared within 5 s
