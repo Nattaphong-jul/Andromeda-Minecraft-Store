@@ -20,7 +20,7 @@ public class LotteryManager {
 
     public static final long ROUND_TICKS = 7L * 24000L;
     public static final long RESULT_WINDOW_TICKS = 24000L;
-    public static final int MAX_TICKETS = 5;
+    public static final int MAX_TICKETS = 2;
     public static final double[] PRIZES = {100_000_000.0, 40_000_000.0, 6_000_000.0};
     public static final int POOL_SIZE = 36;
 
