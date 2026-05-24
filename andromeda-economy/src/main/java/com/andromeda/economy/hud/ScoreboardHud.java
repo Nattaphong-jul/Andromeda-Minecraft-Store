@@ -101,7 +101,7 @@ public class ScoreboardHud {
 
         // A Asset (7)
         sendLine(player, obj.getName(), LINE_ASSET, 7,
-            Component.literal("A ").withStyle(ChatFormatting.YELLOW)
+            Component.literal("◆ ").withStyle(ChatFormatting.YELLOW)
                 .append(Component.literal("Asset ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(EconomyUtils.compact(assets)).withStyle(ChatFormatting.YELLOW)));
 
