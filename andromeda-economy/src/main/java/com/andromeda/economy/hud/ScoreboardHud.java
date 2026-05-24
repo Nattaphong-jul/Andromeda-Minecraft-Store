@@ -93,41 +93,41 @@ public class ScoreboardHud {
         // Spacer (9)
         sendLine(player, obj.getName(), LINE_SP1, 9, Component.literal(" "));
 
-        // B Money (8)
-        sendLine(player, obj.getName(), LINE_BAL, 8,
-            Component.literal("B ").withStyle(ChatFormatting.GREEN)
-                .append(Component.literal("Money ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(EconomyUtils.compact(data.balance)).withStyle(ChatFormatting.GREEN)));
-
-        // A Asset (7)
-        sendLine(player, obj.getName(), LINE_ASSET, 7,
-            Component.literal("◆ ").withStyle(ChatFormatting.YELLOW)
-                .append(Component.literal("Asset ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(EconomyUtils.compact(assets)).withStyle(ChatFormatting.YELLOW)));
-
-        // ⚔ Kills (6)
-        sendLine(player, obj.getName(), LINE_KLS, 6,
-            Component.literal("⚔ ").withStyle(ChatFormatting.RED)
-                .append(Component.literal("Kills ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(EconomyUtils.compact(data.kills)).withStyle(ChatFormatting.RED)));
-
-        // ⏱ Lottery (5)
-        sendLine(player, obj.getName(), LINE_LOTTERY, 5, buildLotteryLine(player.level().getServer()));
-
-        // $ Spend (4)
-        sendLine(player, obj.getName(), LINE_SPEND, 4,
-            Component.literal("$ ").withStyle(ChatFormatting.LIGHT_PURPLE)
-                .append(Component.literal("Spend ").withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(EconomyUtils.compact(data.totalSpend)).withStyle(ChatFormatting.LIGHT_PURPLE)));
-
-        // ★ Rank (3) — based on total wealth
+        // ★ Rank (8)
         String rank = RankManager.rankName(totalWealth);
-        sendLine(player, obj.getName(), LINE_RANK, 3,
+        sendLine(player, obj.getName(), LINE_RANK, 8,
             Component.literal("★ ").withStyle(ChatFormatting.GOLD)
                 .append(Component.literal("Rank ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(rank).withStyle(RankManager.rankColor(rank))));
 
-        // Spacer (2) — non-breaking space prevents client deduplication
+        // B Money (7)
+        sendLine(player, obj.getName(), LINE_BAL, 7,
+            Component.literal("B ").withStyle(ChatFormatting.GREEN)
+                .append(Component.literal("Money ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(EconomyUtils.compact(data.balance)).withStyle(ChatFormatting.GREEN)));
+
+        // ◆ Asset (6)
+        sendLine(player, obj.getName(), LINE_ASSET, 6,
+            Component.literal("◆ ").withStyle(ChatFormatting.YELLOW)
+                .append(Component.literal("Asset ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(EconomyUtils.compact(assets)).withStyle(ChatFormatting.YELLOW)));
+
+        // $ Spend (5)
+        sendLine(player, obj.getName(), LINE_SPEND, 5,
+            Component.literal("$ ").withStyle(ChatFormatting.LIGHT_PURPLE)
+                .append(Component.literal("Spend ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(EconomyUtils.compact(data.totalSpend)).withStyle(ChatFormatting.LIGHT_PURPLE)));
+
+        // ⚔ Kills (4)
+        sendLine(player, obj.getName(), LINE_KLS, 4,
+            Component.literal("⚔ ").withStyle(ChatFormatting.RED)
+                .append(Component.literal("Kills ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(EconomyUtils.compact(data.kills)).withStyle(ChatFormatting.RED)));
+
+        // ⏱ Lottery (3)
+        sendLine(player, obj.getName(), LINE_LOTTERY, 3, buildLotteryLine(player.level().getServer()));
+
+        // Spacer (2)
         sendLine(player, obj.getName(), LINE_SP2, 2, Component.literal(" "));
 
         // Ping (1)
@@ -155,7 +155,7 @@ public class ScoreboardHud {
     public void updateLotteryLine(ServerPlayer player) {
         Objective obj = objectives.get(player.getStringUUID());
         if (obj == null || !initialised.contains(player.getStringUUID())) return;
-        sendLine(player, obj.getName(), LINE_LOTTERY, 5, buildLotteryLine(player.level().getServer()));
+        sendLine(player, obj.getName(), LINE_LOTTERY, 3, buildLotteryLine(player.level().getServer()));
     }
 
     private static net.minecraft.network.chat.MutableComponent buildLotteryLine(MinecraftServer server) {
