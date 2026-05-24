@@ -190,6 +190,11 @@ public class LotteryManager {
         if (!resultWindowActive) conductDraw(server);
     }
 
+    /** Skips the result window and starts the next round immediately (OP-only, for testing). */
+    public void forceEndResult(MinecraftServer server) {
+        if (resultWindowActive) endResultWindow(server);
+    }
+
     // ── Getters ───────────────────────────────────────────────────────────────
 
     public double getTicketPrice()               { return ticketPrice; }

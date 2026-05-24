@@ -15,6 +15,8 @@ public class LotteryCommand {
                 .executes(ctx -> open(ctx.getSource()))
                 .then(Commands.literal("forcedraw")
                     .executes(ctx -> forceDraw(ctx.getSource())))
+                .then(Commands.literal("skipresult")
+                    .executes(ctx -> skipResult(ctx.getSource())))
             );
         }
     }
@@ -31,6 +33,15 @@ public class LotteryCommand {
         AndromedaEconomy.lottery.forceDraw(source.getServer());
         source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
             "[Lottery] Draw forced."), true);
+        return 1;
+    }
+
+    private static int skipResult(CommandSourceStack source) {
+        if (!(source.getEntity() instanceof ServerPlayer player)) return 0;
+        if (!player.level().getServer().getPlayerList().isOp(new NameAndId(player.getGameProfile()))) return 0;
+        AndromedaEconomy.lottery.forceEndResult(source.getServer());
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+            "[Lottery] Result window skipped. New round started."), true);
         return 1;
     }
 }
