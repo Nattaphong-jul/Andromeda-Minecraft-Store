@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 
 import java.io.*;
 import java.util.*;
@@ -147,6 +148,7 @@ public class LotteryManager {
             Component.literal("Congratulations!").withStyle(ChatFormatting.GOLD)));
         player.connection.send(new ClientboundSetSubtitleTextPacket(
             Component.literal("You won Lottery Prize #" + (tier + 1) + "!").withStyle(ChatFormatting.WHITE)));
+        AndromedaEconomy.playSound(player, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
     }
 
     private List<Integer> getWonTiers(List<String> tickets) {

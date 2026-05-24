@@ -132,7 +132,7 @@ public class LotteryRedeemGui extends ChestMenu {
         if (prize <= 0) return;
 
         AndromedaEconomy.db.addBalance(sp.getStringUUID(), prize);
-        AndromedaEconomy.playSound(sp, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        AndromedaEconomy.playSound(sp, SoundEvents.PLAYER_LEVELUP, 1.0f, 1.0f);
         sp.sendSystemMessage(Component.literal(
             "Claimed " + EconomyUtils.compact(prize) + " THB lottery prize!")
             .withStyle(ChatFormatting.GREEN));
