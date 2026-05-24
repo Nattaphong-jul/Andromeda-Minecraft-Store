@@ -64,7 +64,7 @@ public class ScoreboardHud {
             Scoreboard local = new Scoreboard();
             String name = "ae_" + uuid.replace("-", "").substring(0, 13);
             MutableComponent title = Component.literal("Andromeda")
-                .withStyle(s -> s.withBold(true).withColor(ChatFormatting.BLUE));
+                .withStyle(s -> s.withBold(true).withColor(ChatFormatting.AQUA));
             return local.addObjective(
                 name, ObjectiveCriteria.DUMMY, title,
                 ObjectiveCriteria.RenderType.INTEGER, false, BlankFormat.INSTANCE);
@@ -161,19 +161,19 @@ public class ScoreboardHud {
     private static net.minecraft.network.chat.MutableComponent buildLotteryLine(MinecraftServer server) {
         LotteryManager lottery = AndromedaEconomy.lottery;
         if (lottery == null) {
-            return Component.literal("⏱ ").withStyle(ChatFormatting.BLUE)
+            return Component.literal("⏱ ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("Lottery").withStyle(ChatFormatting.WHITE));
         }
         if (lottery.isResultWindowActive()) {
-            return Component.literal("⏱ ").withStyle(ChatFormatting.BLUE)
-                .append(Component.literal("Showing Result").withStyle(ChatFormatting.BLUE));
+            return Component.literal("⏱ ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("Showing Result").withStyle(ChatFormatting.AQUA));
         }
         long ticks = lottery.getTicksUntilDraw(server);
         long days  = ticks / 24000;
         long hours = (ticks % 24000) / 1000;
-        return Component.literal("⏱ ").withStyle(ChatFormatting.BLUE)
+        return Component.literal("⏱ ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal("Lottery ").withStyle(ChatFormatting.WHITE))
-            .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.BLUE));
+            .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.AQUA));
     }
 
     public void remove(ServerPlayer player) {
