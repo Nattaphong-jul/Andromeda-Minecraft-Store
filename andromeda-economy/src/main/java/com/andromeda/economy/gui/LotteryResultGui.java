@@ -34,7 +34,7 @@ import java.util.List;
 public class LotteryResultGui extends ChestMenu {
 
     private static final int[] RESULT_SLOTS = {11, 13, 15};
-    private static final int SLOT_CLOSE = 49;
+    private static final int SLOT_CLOSE = 45; // bottom-left corner
 
     private final SimpleContainer inv;
 

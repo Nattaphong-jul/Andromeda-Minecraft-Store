@@ -23,32 +23,33 @@ import net.minecraft.world.item.component.ItemLore;
 import java.util.List;
 
 /**
- * Ticket purchase confirm page — 9-slot (1-row) chest.
+ * Ticket purchase confirm page — 27-slot (3-row) chest, items centred on the middle row.
  *
- * Slot 0 : Red glass  — Cancel
- * Slot 2 : Paper      — ticket preview with assigned number + price lore
- * Slot 4 : Lime glass — Confirm
- * Others : empty
+ * Row 2 (slots 9–17):
+ *   Slot 11 : Red glass  — Cancel
+ *   Slot 13 : Paper      — ticket number + price lore  (centre)
+ *   Slot 15 : Lime glass — Confirm
+ * All others : black glass
  */
 public class LotteryConfirmGui extends ChestMenu {
 
-    private static final int SLOT_CANCEL  = 0;
-    private static final int SLOT_TICKET  = 2;
-    private static final int SLOT_CONFIRM = 4;
+    private static final int SLOT_CANCEL  = 11;
+    private static final int SLOT_TICKET  = 13;
+    private static final int SLOT_CONFIRM = 15;
 
     private final SimpleContainer inv;
     private final String ticketNumber;
     private long lastClickMs = 0;
 
     private LotteryConfirmGui(int syncId, Inventory playerInv, SimpleContainer inv, String ticketNumber) {
-        super(MenuType.GENERIC_9x1, syncId, playerInv, inv, 1);
+        super(MenuType.GENERIC_9x3, syncId, playerInv, inv, 3);
         this.inv = inv;
         this.ticketNumber = ticketNumber;
         populate();
     }
 
     public static void open(ServerPlayer player, String ticketNumber) {
-        SimpleContainer inv = new SimpleContainer(9);
+        SimpleContainer inv = new SimpleContainer(27);
         player.openMenu(new SimpleMenuProvider(
             (syncId, playerInv, p) -> new LotteryConfirmGui(syncId, playerInv, inv, ticketNumber),
             Component.literal("Confirm Ticket")
@@ -56,7 +57,8 @@ public class LotteryConfirmGui extends ChestMenu {
     }
 
     private void populate() {
-        for (int i = 0; i < 9; i++) inv.setItem(i, ItemStack.EMPTY);
+        ItemStack glass = blackGlass();
+        for (int i = 0; i < 27; i++) inv.setItem(i, glass.copy());
 
         ItemStack cancelBtn = new ItemStack(Items.RED_STAINED_GLASS_PANE);
         cancelBtn.set(DataComponents.CUSTOM_NAME,
@@ -66,7 +68,7 @@ public class LotteryConfirmGui extends ChestMenu {
 
         ItemStack ticket = new ItemStack(Items.PAPER);
         ticket.set(DataComponents.CUSTOM_NAME,
-            Component.literal("#" + ticketNumber).withStyle(ChatFormatting.WHITE));
+            Component.literal(ticketNumber).withStyle(ChatFormatting.WHITE));
         ticket.set(DataComponents.LORE, new ItemLore(List.of(
             Component.literal("Price: " + EconomyUtils.compact(AndromedaEconomy.lottery.getTicketPrice()) + " THB")
                 .withStyle(ChatFormatting.GREEN)
@@ -79,6 +81,13 @@ public class LotteryConfirmGui extends ChestMenu {
             Component.literal("Confirm").withStyle(ChatFormatting.GREEN));
         ShopGui.markDisplay(confirmBtn);
         inv.setItem(SLOT_CONFIRM, confirmBtn);
+    }
+
+    private static ItemStack blackGlass() {
+        ItemStack s = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
+        s.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
+        ShopGui.markDisplay(s);
+        return s;
     }
 
     @Override

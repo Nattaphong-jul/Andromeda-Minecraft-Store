@@ -35,9 +35,9 @@ import java.util.Random;
 public class LotteryGui extends ChestMenu {
 
     private static final int TICKET_AREA = 36; // slots 0–35
-    private static final int SLOT_RESULT = 45;
-    private static final int SLOT_CLOSE  = 49;
-    private static final int SLOT_REDEEM = 53;
+    private static final int SLOT_CLOSE  = 45; // bottom-left corner
+    private static final int SLOT_RESULT = 48;
+    private static final int SLOT_REDEEM = 49; // adjacent to result
 
     private final SimpleContainer inv;
 
@@ -72,20 +72,19 @@ public class LotteryGui extends ChestMenu {
         ItemStack glass = blackGlass();
         for (int i = TICKET_AREA; i < 54; i++) inv.setItem(i, glass.copy());
 
-        // Result button
+        // Close button — bottom-left corner
+        ItemStack closeBtn = new ItemStack(Items.BARRIER);
+        closeBtn.set(DataComponents.CUSTOM_NAME,
+            Component.literal("Close").withStyle(ChatFormatting.RED));
+        inv.setItem(SLOT_CLOSE, closeBtn);
+
+        // Result + Redeem together (centre of bottom row)
         ItemStack resultBtn = new ItemStack(Items.WRITTEN_BOOK);
         resultBtn.set(DataComponents.CUSTOM_NAME,
             Component.literal("Lottery Result").withStyle(ChatFormatting.YELLOW));
         ShopGui.markDisplay(resultBtn);
         inv.setItem(SLOT_RESULT, resultBtn);
 
-        // Close button
-        ItemStack closeBtn = new ItemStack(Items.BARRIER);
-        closeBtn.set(DataComponents.CUSTOM_NAME,
-            Component.literal("Close").withStyle(ChatFormatting.RED));
-        inv.setItem(SLOT_CLOSE, closeBtn);
-
-        // Redeem button
         ItemStack redeemBtn = new ItemStack(Items.CHEST);
         redeemBtn.set(DataComponents.CUSTOM_NAME,
             Component.literal("Redeem").withStyle(ChatFormatting.GREEN));

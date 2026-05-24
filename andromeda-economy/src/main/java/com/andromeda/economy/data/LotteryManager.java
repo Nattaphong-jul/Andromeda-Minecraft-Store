@@ -183,6 +183,13 @@ public class LotteryManager {
         return total;
     }
 
+    // ── Admin / test helpers ──────────────────────────────────────────────────
+
+    /** Forces the draw to happen immediately (OP-only, for testing). */
+    public void forceDraw(MinecraftServer server) {
+        if (!resultWindowActive) conductDraw(server);
+    }
+
     // ── Getters ───────────────────────────────────────────────────────────────
 
     public double getTicketPrice()               { return ticketPrice; }
