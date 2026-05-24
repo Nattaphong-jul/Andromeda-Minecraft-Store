@@ -64,7 +64,7 @@ public class ScoreboardHud {
             Scoreboard local = new Scoreboard();
             String name = "ae_" + uuid.replace("-", "").substring(0, 13);
             MutableComponent title = Component.literal("Andromeda")
-                .withStyle(s -> s.withBold(true).withColor(ChatFormatting.DARK_AQUA));
+                .withStyle(s -> s.withBold(true).withColor(ChatFormatting.AQUA));
             return local.addObjective(
                 name, ObjectiveCriteria.DUMMY, title,
                 ObjectiveCriteria.RenderType.INTEGER, false, BlankFormat.INSTANCE);
