@@ -161,19 +161,19 @@ public class ScoreboardHud {
     private static net.minecraft.network.chat.MutableComponent buildLotteryLine(MinecraftServer server) {
         LotteryManager lottery = AndromedaEconomy.lottery;
         if (lottery == null) {
-            return Component.literal("⏱ ").withStyle(ChatFormatting.YELLOW)
+            return Component.literal("⏱ ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal("Lottery").withStyle(ChatFormatting.WHITE));
         }
         if (lottery.isResultWindowActive()) {
-            return Component.literal("⏱ ").withStyle(ChatFormatting.YELLOW)
-                .append(Component.literal("Showing Result").withStyle(ChatFormatting.YELLOW));
+            return Component.literal("⏱ ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal("Showing Result").withStyle(ChatFormatting.AQUA));
         }
         long ticks = lottery.getTicksUntilDraw(server);
         long days  = ticks / 24000;
         long hours = (ticks % 24000) / 1000;
-        return Component.literal("⏱ ").withStyle(ChatFormatting.YELLOW)
+        return Component.literal("⏱ ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal("Lottery ").withStyle(ChatFormatting.WHITE))
-            .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.YELLOW));
+            .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.AQUA));
     }
 
     public void remove(ServerPlayer player) {

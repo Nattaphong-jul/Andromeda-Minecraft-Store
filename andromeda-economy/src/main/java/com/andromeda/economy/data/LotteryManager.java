@@ -121,6 +121,7 @@ public class LotteryManager {
         previousWinningNumbers = currentWinningNumbers.clone();
         previousRoundId = currentRoundId;
         playerData.values().removeIf(d -> d.roundId == currentRoundId);
+        pendingNotifications.clear(); // result window closed — unclaimed prizes expire
         currentRoundId++;
         roundStartTime = server.overworld().getGameTime();
         resultWindowActive = false;
