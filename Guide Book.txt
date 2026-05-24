@@ -1,0 +1,102 @@
+   
+
+   Andromeda Server
+     
+
+ 
+         Content
+
+Command List      2 - 7
+
+Ranking System   8 - 9 
+
+====================================
+====== Shop =======
+
+/shop
+/sh
+
+/shop [search]
+/sh [search]
+
+----- Example ------
+
+/shop iron
+/sh diamond
+=====================================
+======= Sell =======
+
+/sell
+
+Move item you want to sell into it and press Confirm on the bottom right.
+
+That's it :)
+
+=====================================
+==== Pay Player ====
+
+/pay [name] [amount]
+
+
+----- Example ------
+
+/pay Lollipop 10k
+/pay Lollipop 10000
+
+======================================
+== Player Balance ==
+
+/balance [name]
+
+
+----- Example ------
+
+/balance isayes2002
+
+===================================
+==== Night Vision ====
+
+/nightvision
+/nv
+
+
+Toggle Night Vision
+ON and OFF
+
+====================================
+===== Set Home =====
+
+/home set [Name]
+/home tp [Name]
+/home delete [Name]
+/home list
+
+
+----- Example ------
+/home set Home1
+/home tp Home2
+/home delete Home4 
+/home list
+
+==================================
+Rank               Money
+===================
+
+Unemployed:        <99K
+
+Salary Man:        100K
+
+Anutin:                10M 
+CEO:                 100M
+
+MrBeast:               1B
+
+===================================
+Rank               Money
+===================
+
+CK:                    10B
+
+Jensen Huang:    100B
+
+Elon Musk:        >500B

@@ -21,6 +21,7 @@ public class LotteryManager {
     public static final long RESULT_WINDOW_TICKS = 24000L;
     public static final int MAX_TICKETS = 5;
     public static final double[] PRIZES = {100_000_000.0, 40_000_000.0, 6_000_000.0};
+    public static final int POOL_SIZE = 36;
 
     private double ticketPrice = 100_000.0;
     private int currentRoundId = 1;
@@ -30,8 +31,8 @@ public class LotteryManager {
     private String[] currentWinningNumbers = {"", "", ""};
     private String[] previousWinningNumbers = {"", "", ""};
     private int previousRoundId = 0;
-    /** Pre-set winning numbers for the next draw (null slot = use random). OP test tool. */
-    private final String[] forcedWinningNumbers = {null, null, null};
+    /** Fixed pool of numbers shown in the lottery chest this round. */
+    private String[] roundPool = new String[POOL_SIZE];
 
     private final Map<String, PlayerLotteryData> playerData = new HashMap<>();
     private final Map<String, List<Integer>> pendingNotifications = new HashMap<>();
@@ -43,6 +44,7 @@ public class LotteryManager {
     }
 
     public LotteryManager() {
+        Arrays.fill(roundPool, "000000");
         load();
     }
 
@@ -52,6 +54,7 @@ public class LotteryManager {
         long worldTime = server.overworld().getGameTime();
         if (roundStartTime < 0) {
             roundStartTime = worldTime;
+            generateRoundPool();
             save();
             return;
         }
@@ -66,16 +69,32 @@ public class LotteryManager {
         }
     }
 
-    private void conductDraw(MinecraftServer server) {
+    /**
+     * Generates a fresh 36-number pool for the round and picks 3 of them as winning numbers.
+     * Called at round start so the prize is determined before the draw fires.
+     */
+    private void generateRoundPool() {
         Random rng = new Random();
-        currentWinningNumbers = new String[]{
-            forcedWinningNumbers[0] != null ? forcedWinningNumbers[0] : String.format("%06d", rng.nextInt(1_000_000)),
-            forcedWinningNumbers[1] != null ? forcedWinningNumbers[1] : String.format("%06d", rng.nextInt(1_000_000)),
-            forcedWinningNumbers[2] != null ? forcedWinningNumbers[2] : String.format("%06d", rng.nextInt(1_000_000))
-        };
-        forcedWinningNumbers[0] = null;
-        forcedWinningNumbers[1] = null;
-        forcedWinningNumbers[2] = null;
+        Set<String> pool = new LinkedHashSet<>();
+        // Pick 3 unique winning numbers first
+        for (int t = 0; t < 3; t++) {
+            String win;
+            do { win = String.format("%06d", rng.nextInt(1_000_000)); }
+            while (pool.contains(win));
+            currentWinningNumbers[t] = win;
+            pool.add(win);
+        }
+        // Fill remaining slots to POOL_SIZE
+        while (pool.size() < POOL_SIZE) {
+            pool.add(String.format("%06d", rng.nextInt(1_000_000)));
+        }
+        List<String> list = new ArrayList<>(pool);
+        Collections.shuffle(list, rng);
+        roundPool = list.toArray(new String[0]);
+    }
+
+    private void conductDraw(MinecraftServer server) {
+        // Winning numbers already set at round start by generateRoundPool()
         resultWindowActive = true;
         resultWindowStartTime = server.overworld().getGameTime();
 
@@ -105,6 +124,7 @@ public class LotteryManager {
         roundStartTime = server.overworld().getGameTime();
         resultWindowActive = false;
         currentWinningNumbers = new String[]{"", "", ""};
+        generateRoundPool(); // immediately sets pool + winning numbers for the new round
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             AndromedaEconomy.hud.update(player);
         }
@@ -188,25 +208,33 @@ public class LotteryManager {
         return total;
     }
 
-    // ── Admin / test helpers ──────────────────────────────────────────────────
+    // ── Admin helpers ──────────────────────────────────────────────────────────
 
-    /** Forces the draw to happen immediately (OP-only, for testing). */
     public void forceDraw(MinecraftServer server) {
         if (!resultWindowActive) conductDraw(server);
     }
 
-    /** Skips the result window and starts the next round immediately (OP-only, for testing). */
     public void forceEndResult(MinecraftServer server) {
         if (resultWindowActive) endResultWindow(server);
     }
 
-    /** Pre-sets the winning number for a tier (0-indexed) for the next draw. Pass null to clear. */
-    public void setForcedNumber(int tier, String number) {
-        if (tier >= 0 && tier < 3) forcedWinningNumbers[tier] = number;
-    }
-
-    public String getForcedNumber(int tier) {
-        return (tier >= 0 && tier < 3) ? forcedWinningNumbers[tier] : null;
+    /**
+     * Directly changes the winning number for a tier in the current round.
+     * If the number isn't already in the pool, it replaces a non-winning slot so players can buy it.
+     */
+    public void setCurrentWinningNumber(int tier, String number) {
+        if (tier < 0 || tier >= 3) return;
+        boolean inPool = false;
+        for (String s : roundPool) if (s.equals(number)) { inPool = true; break; }
+        if (!inPool) {
+            for (int i = 0; i < roundPool.length; i++) {
+                boolean isWinner = false;
+                for (String w : currentWinningNumbers) if (roundPool[i].equals(w)) { isWinner = true; break; }
+                if (!isWinner) { roundPool[i] = number; break; }
+            }
+        }
+        currentWinningNumbers[tier] = number;
+        save();
     }
 
     // ── Getters ───────────────────────────────────────────────────────────────
@@ -217,6 +245,7 @@ public class LotteryManager {
     public String[] getCurrentWinningNumbers()   { return currentWinningNumbers; }
     public String[] getPreviousWinningNumbers()  { return previousWinningNumbers; }
     public int getPreviousRoundId()              { return previousRoundId; }
+    public String[] getRoundPool()               { return roundPool; }
 
     public long getTicksUntilDraw(MinecraftServer server) {
         if (resultWindowActive || roundStartTime < 0) return 0;
@@ -244,6 +273,10 @@ public class LotteryManager {
             JsonArray prevWin = new JsonArray();
             for (String n : previousWinningNumbers) prevWin.add(n);
             root.add("previousWinningNumbers", prevWin);
+
+            JsonArray pool = new JsonArray();
+            for (String n : roundPool) pool.add(n);
+            root.add("roundPool", pool);
 
             JsonObject tickets = new JsonObject();
             for (Map.Entry<String, PlayerLotteryData> e : playerData.entrySet()) {
@@ -296,6 +329,14 @@ public class LotteryManager {
                 JsonArray arr = root.getAsJsonArray("previousWinningNumbers");
                 for (int i = 0; i < 3 && i < arr.size(); i++)
                     previousWinningNumbers[i] = arr.get(i).getAsString();
+            }
+            if (root.has("roundPool")) {
+                JsonArray arr = root.getAsJsonArray("roundPool");
+                roundPool = new String[arr.size()];
+                for (int i = 0; i < arr.size(); i++) roundPool[i] = arr.get(i).getAsString();
+            } else if (!resultWindowActive) {
+                // Migrate from old save format: generate pool now
+                generateRoundPool();
             }
             if (root.has("playerTickets")) {
                 for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("playerTickets").entrySet()) {

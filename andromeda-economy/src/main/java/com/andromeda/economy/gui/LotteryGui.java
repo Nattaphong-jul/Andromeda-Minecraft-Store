@@ -19,25 +19,23 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-import java.util.Random;
-
 /**
  * Main lottery page — 54-slot chest.
  *
- * Slots 0–35  : cosmetic paper ticket items (rows 1–4)
+ * Slots 0–35  : fixed ticket numbers from the round pool (same for all players)
  * Slots 36–44 : black glass filler (row 5)
- * Slot  45    : Lottery Result button
- * Slots 46–48 : black glass
- * Slot  49    : Close
- * Slots 50–52 : black glass
- * Slot  53    : Redeem button
+ * Slot  45    : Close button (bottom-left corner)
+ * Slots 46–47 : black glass
+ * Slot  48    : Lottery Result button
+ * Slot  49    : Redeem button
+ * Slots 50–53 : black glass
  */
 public class LotteryGui extends ChestMenu {
 
-    private static final int TICKET_AREA = 36; // slots 0–35
-    private static final int SLOT_CLOSE  = 45; // bottom-left corner
+    private static final int TICKET_AREA = 36;
+    private static final int SLOT_CLOSE  = 45;
     private static final int SLOT_RESULT = 48;
-    private static final int SLOT_REDEEM = 49; // adjacent to result
+    private static final int SLOT_REDEEM = 49;
 
     private final SimpleContainer inv;
 
@@ -56,11 +54,10 @@ public class LotteryGui extends ChestMenu {
     }
 
     private void populate() {
-        Random rng = new Random();
-
-        // Rows 1–4: cosmetic tickets
+        // Rows 1–4: fixed numbers from the round pool (same for all players this round)
+        String[] pool = AndromedaEconomy.lottery.getRoundPool();
         for (int i = 0; i < TICKET_AREA; i++) {
-            String num = String.format("%06d", rng.nextInt(1_000_000));
+            String num = (pool != null && i < pool.length) ? pool[i] : String.format("%06d", i);
             ItemStack ticket = new ItemStack(Items.PAPER);
             ticket.set(DataComponents.CUSTOM_NAME,
                 Component.literal("#" + num).withStyle(ChatFormatting.WHITE));
@@ -108,11 +105,11 @@ public class LotteryGui extends ChestMenu {
         if (slotId == SLOT_REDEEM) { sp.closeContainer(); LotteryRedeemGui.open(sp); return; }
 
         if (slotId >= 0 && slotId < TICKET_AREA) {
-            handleTicketClick(sp);
+            handleTicketClick(sp, slotId);
         }
     }
 
-    private void handleTicketClick(ServerPlayer sp) {
+    private void handleTicketClick(ServerPlayer sp, int slotId) {
         LotteryManager lottery = AndromedaEconomy.lottery;
 
         if (lottery.isResultWindowActive()) {
@@ -135,7 +132,9 @@ public class LotteryGui extends ChestMenu {
             return;
         }
 
-        String assignedNumber = String.format("%06d", new Random().nextInt(1_000_000));
+        String[] pool = lottery.getRoundPool();
+        if (pool == null || slotId >= pool.length) return;
+        String assignedNumber = pool[slotId];
         sp.closeContainer();
         LotteryConfirmGui.open(sp, assignedNumber);
     }

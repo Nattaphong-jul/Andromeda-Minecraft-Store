@@ -24,6 +24,8 @@ public class LotteryCommand {
                     .executes(ctx -> skipResult(ctx.getSource())))
                 .then(Commands.literal("status")
                     .executes(ctx -> status(ctx.getSource())))
+                .then(Commands.literal("viewresult")
+                    .executes(ctx -> viewResult(ctx.getSource())))
                 .then(Commands.literal("setnumber")
                     .then(Commands.argument("tier", IntegerArgumentType.integer(1, 3))
                         .then(Commands.argument("number", StringArgumentType.word())
@@ -61,6 +63,22 @@ public class LotteryCommand {
         return 1;
     }
 
+    /** Shows the current round's prize numbers privately to the OP — not visible to other players. */
+    private static int viewResult(CommandSourceStack source) {
+        if (!isOp(source)) return 0;
+        LotteryManager lottery = AndromedaEconomy.lottery;
+        String[] win = lottery.getCurrentWinningNumbers();
+        source.sendSuccess(() -> Component.literal("[Lottery] Round #" + lottery.getCurrentRoundId() + " prize numbers (private):")
+            .withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.literal("  1st: ").withStyle(ChatFormatting.WHITE)
+            .append(Component.literal("#" + win[0]).withStyle(ChatFormatting.GOLD)), false);
+        source.sendSuccess(() -> Component.literal("  2nd: ").withStyle(ChatFormatting.WHITE)
+            .append(Component.literal("#" + win[1]).withStyle(ChatFormatting.GOLD)), false);
+        source.sendSuccess(() -> Component.literal("  3rd: ").withStyle(ChatFormatting.WHITE)
+            .append(Component.literal("#" + win[2]).withStyle(ChatFormatting.GOLD)), false);
+        return 1;
+    }
+
     private static int setNumber(CommandSourceStack source, int tier, String number) {
         if (!isOp(source)) return 0;
         if (!number.matches("\\d{6}")) {
@@ -72,18 +90,16 @@ public class LotteryCommand {
             source.sendFailure(Component.literal("Cannot set numbers during the result window."));
             return 0;
         }
-        lottery.setForcedNumber(tier - 1, number);
-        source.sendSuccess(() -> Component.literal("[Lottery] Tier " + tier + " winning number pre-set to ")
+        lottery.setCurrentWinningNumber(tier - 1, number);
+        source.sendSuccess(() -> Component.literal("[Lottery] Tier " + tier + " prize set to ")
             .withStyle(ChatFormatting.YELLOW)
             .append(Component.literal("#" + number).withStyle(ChatFormatting.GOLD))
-            .append(Component.literal(". Will be used on the next draw.").withStyle(ChatFormatting.YELLOW)), false);
+            .append(Component.literal(" (only you can see this).").withStyle(ChatFormatting.GRAY)), false);
         return 1;
     }
 
     private static void sendStatus(CommandSourceStack source) {
         LotteryManager lottery = AndromedaEconomy.lottery;
-        String[] win = lottery.getCurrentWinningNumbers();
-
         source.sendSuccess(() -> Component.literal("--- Lottery Status ---").withStyle(ChatFormatting.GOLD), false);
         source.sendSuccess(() -> Component.literal("Round: ").withStyle(ChatFormatting.WHITE)
             .append(Component.literal("#" + lottery.getCurrentRoundId()).withStyle(ChatFormatting.YELLOW)), false);
@@ -91,8 +107,8 @@ public class LotteryCommand {
             .append(lottery.isResultWindowActive()
                 ? Component.literal("Result Window").withStyle(ChatFormatting.GREEN)
                 : Component.literal("Active (buying open)").withStyle(ChatFormatting.AQUA)), false);
-
         if (lottery.isResultWindowActive()) {
+            String[] win = lottery.getCurrentWinningNumbers();
             source.sendSuccess(() -> Component.literal("Winning numbers:").withStyle(ChatFormatting.WHITE), false);
             source.sendSuccess(() -> Component.literal("  1st: ").withStyle(ChatFormatting.WHITE)
                 .append(Component.literal("#" + win[0]).withStyle(ChatFormatting.GOLD)), false);
@@ -106,25 +122,6 @@ public class LotteryCommand {
             long hours = (ticks % 24000) / 1000;
             source.sendSuccess(() -> Component.literal("Draw in: ").withStyle(ChatFormatting.WHITE)
                 .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.YELLOW)), false);
-
-            // Show any pre-set numbers
-            boolean anyPreset = false;
-            for (int t = 0; t < 3; t++) {
-                String forced = lottery.getForcedNumber(t);
-                if (forced != null) { anyPreset = true; break; }
-            }
-            if (anyPreset) {
-                source.sendSuccess(() -> Component.literal("Pre-set numbers for next draw:").withStyle(ChatFormatting.GRAY), false);
-                String[] labels = {"1st", "2nd", "3rd"};
-                for (int t = 0; t < 3; t++) {
-                    String forced = lottery.getForcedNumber(t);
-                    final int tier = t;
-                    if (forced != null) {
-                        source.sendSuccess(() -> Component.literal("  " + labels[tier] + ": ").withStyle(ChatFormatting.GRAY)
-                            .append(Component.literal("#" + forced).withStyle(ChatFormatting.GOLD)), false);
-                    }
-                }
-            }
         }
     }
 
