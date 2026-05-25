@@ -113,7 +113,8 @@ public class SellGui extends ChestMenu {
             return;
         }
 
-        AndromedaEconomy.db.addBalance(sp.getStringUUID(), total);
+        double earned = AndromedaEconomy.company.distribute(sp.getStringUUID(), total, sp.level().getServer());
+        AndromedaEconomy.db.addBalance(sp.getStringUUID(), earned);
         sp.sendSystemMessage(Component.literal(
             "Sold items for " + EconomyUtils.format(total) + " THB"
         ).withStyle(ChatFormatting.GREEN));

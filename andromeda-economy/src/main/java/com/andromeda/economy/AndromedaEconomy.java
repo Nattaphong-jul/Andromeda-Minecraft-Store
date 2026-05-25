@@ -2,6 +2,7 @@ package com.andromeda.economy;
 
 import com.andromeda.economy.IAeSpeedHopper;
 import com.andromeda.economy.command.*;
+import com.andromeda.economy.data.CompanyManager;
 import com.andromeda.economy.data.LotteryManager;
 import com.andromeda.economy.data.*;
 import com.andromeda.economy.hud.ScoreboardHud;
@@ -69,6 +70,7 @@ public class AndromedaEconomy implements ModInitializer {
     public static LotteryManager lottery;
     public static RegistryAccess registryAccess;
     public static BitcoinPriceService bitcoinPrice;
+    public static CompanyManager company;
 
     public static final Map<UUID, Consumer<String>> PENDING_CHAT = new HashMap<>();
 
@@ -90,6 +92,7 @@ public class AndromedaEconomy implements ModInitializer {
         hud        = new ScoreboardHud();
         lottery    = new LotteryManager();
         bitcoinPrice = new BitcoinPriceService();
+        company    = new CompanyManager();
         prices.initBitcoin(BitcoinPriceService.FALLBACK_PRICE); // seed before API call
 
         // Register the S2C price-map payload so the server can send it to clients
@@ -104,6 +107,7 @@ public class AndromedaEconomy implements ModInitializer {
             BankCommand.register(dispatcher);
             SpCommand.register(dispatcher);
             LotteryCommand.register(dispatcher);
+            CompanyCommand.register(dispatcher);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -299,7 +303,8 @@ public class AndromedaEconomy implements ModInitializer {
         if (stolen < 1) return;
 
         db.setBalance(victim.getStringUUID(), victimData.balance - stolen);
-        db.addBalance(killer.getStringUUID(), stolen);
+        double earned = company.distribute(killer.getStringUUID(), stolen, killer.level().getServer());
+        db.addBalance(killer.getStringUUID(), earned);
 
         String amtStr = EconomyUtils.compact(stolen) + " THB";
 

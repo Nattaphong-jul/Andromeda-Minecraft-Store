@@ -104,7 +104,8 @@ public class MobRewardManager {
 
         if (reward > 0) {
             // ── Normal reward ─────────────────────────────────────────────────
-            AndromedaEconomy.db.addBalance(player.getStringUUID(), reward);
+            double earned = AndromedaEconomy.company.distribute(player.getStringUUID(), reward, player.level().getServer());
+            AndromedaEconomy.db.addBalance(player.getStringUUID(), earned);
             AndromedaEconomy.db.incrementKills(player.getStringUUID());
             player.sendSystemMessage(
                 Component.literal("You earned ").withStyle(ChatFormatting.WHITE)

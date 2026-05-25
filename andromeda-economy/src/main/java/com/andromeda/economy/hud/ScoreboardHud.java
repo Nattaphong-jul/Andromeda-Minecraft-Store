@@ -3,6 +3,7 @@ package com.andromeda.economy.hud;
 import com.andromeda.economy.AndromedaEconomy;
 import com.andromeda.economy.EconomyUtils;
 import com.andromeda.economy.RankManager;
+import com.andromeda.economy.data.CompanyData;
 import com.andromeda.economy.data.LotteryManager;
 import com.andromeda.economy.data.PlayerData;
 import net.minecraft.server.MinecraftServer;
@@ -51,6 +52,7 @@ public class ScoreboardHud {
     private static final String LINE_LOTTERY = "ae_lt";
     private static final String LINE_SPEND   = "ae_sd";
     private static final String LINE_RANK    = "ae_rk";
+    private static final String LINE_COMPANY = "ae_co";
     private static final String LINE_SP2     = "ae_s2";
     private static final String LINE_PING    = "ae_pg";
 
@@ -90,15 +92,27 @@ public class ScoreboardHud {
         player.connection.send(new ClientboundSetObjectivePacket(obj, mode));
         player.connection.send(new ClientboundSetDisplayObjectivePacket(DisplaySlot.SIDEBAR, obj));
 
-        // Spacer (9)
-        sendLine(player, obj.getName(), LINE_SP1, 9, Component.literal(" "));
+        // Spacer (10)
+        sendLine(player, obj.getName(), LINE_SP1, 10, Component.literal(" "));
 
-        // ★ Rank (8)
+        // ★ Rank (9)
         String rank = RankManager.rankName(totalWealth);
-        sendLine(player, obj.getName(), LINE_RANK, 8,
+        sendLine(player, obj.getName(), LINE_RANK, 9,
             Component.literal("★ ").withStyle(ChatFormatting.GOLD)
                 .append(Component.literal("Rank ").withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(rank).withStyle(RankManager.rankColor(rank))));
+
+        // ◈ Company (8)
+        String companyName = "None";
+        if (AndromedaEconomy.company != null) {
+            CompanyData cd = AndromedaEconomy.company.getByMember(uuid);
+            if (cd != null) companyName = cd.name;
+        }
+        sendLine(player, obj.getName(), LINE_COMPANY, 8,
+            Component.literal("◈ ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal("Company ").withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(companyName)
+                    .withStyle(companyName.equals("None") ? ChatFormatting.GRAY : ChatFormatting.AQUA)));
 
         // B Money (7)
         sendLine(player, obj.getName(), LINE_BAL, 7,
