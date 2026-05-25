@@ -117,11 +117,14 @@ public class LotteryCommand {
             source.sendSuccess(() -> Component.literal("  3rd: ").withStyle(ChatFormatting.WHITE)
                 .append(Component.literal("#" + win[2]).withStyle(ChatFormatting.GOLD)), false);
         } else {
-            long ticks = lottery.getTicksUntilDraw(source.getServer());
-            long days  = ticks / 24000;
-            long hours = (ticks % 24000) / 1000;
+            long ticks   = lottery.getTicksUntilDraw(source.getServer());
+            long total   = ticks / 20;
+            long hours   = total / 3600;
+            long minutes = (total % 3600) / 60;
+            long seconds = total % 60;
+            String time  = String.format("%dh %02dm %02ds", hours, minutes, seconds);
             source.sendSuccess(() -> Component.literal("Draw in: ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.YELLOW)), false);
+                .append(Component.literal(time).withStyle(ChatFormatting.YELLOW)), false);
         }
     }
 

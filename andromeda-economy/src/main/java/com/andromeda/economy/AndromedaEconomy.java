@@ -172,11 +172,11 @@ public class AndromedaEconomy implements ModInitializer {
             if (tick % 20 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     hud.updatePingOnly(player);
+                    hud.updateLotteryLine(player);
                 }
             }
             if (tick % 100 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    hud.updateLotteryLine(player);
                     if (CLIENT_MOD_PLAYERS.contains(player.getUUID())) {
                         // Keep inventory clean for client-mod players so picked-up items
                         // with leftover price lore get cleared within 5 s

@@ -168,12 +168,15 @@ public class ScoreboardHud {
             return Component.literal("⏱ ").withStyle(ChatFormatting.DARK_AQUA)
                 .append(Component.literal("Showing Result").withStyle(ChatFormatting.DARK_AQUA));
         }
-        long ticks = lottery.getTicksUntilDraw(server);
-        long days  = ticks / 24000;
-        long hours = (ticks % 24000) / 1000;
+        long ticks   = lottery.getTicksUntilDraw(server);
+        long total   = ticks / 20;
+        long hours   = total / 3600;
+        long minutes = (total % 3600) / 60;
+        long seconds = total % 60;
+        String time  = String.format("%dh %02dm %02ds", hours, minutes, seconds);
         return Component.literal("⏱ ").withStyle(ChatFormatting.DARK_AQUA)
             .append(Component.literal("Lottery ").withStyle(ChatFormatting.WHITE))
-            .append(Component.literal(days + "d " + hours + "h").withStyle(ChatFormatting.DARK_AQUA));
+            .append(Component.literal(time).withStyle(ChatFormatting.DARK_AQUA));
     }
 
     public void remove(ServerPlayer player) {
