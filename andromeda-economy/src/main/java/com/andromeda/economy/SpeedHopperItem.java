@@ -25,6 +25,7 @@ public final class SpeedHopperItem {
         stack.set(DataComponents.LORE, new ItemLore(List.of(
             Component.literal("Transfers 10 items at double speed").withStyle(ChatFormatting.GRAY)
         )));
+        stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         TagValueOutput output = TagValueOutput.createWithoutContext(ProblemReporter.DISCARDING);
         output.putBoolean("ae_speed_hopper", true);
         BlockItem.setBlockEntityData(stack, BlockEntityType.HOPPER, output);
