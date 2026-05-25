@@ -13,9 +13,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.function.BooleanSupplier;
 
 /**
  * Adds "speed hopper" behaviour to {@link HopperBlockEntity}.
@@ -27,6 +24,11 @@ import java.util.function.BooleanSupplier;
  * Changes:
  *  – cooldown halved  (4 ticks instead of 8)
  *  – up to 10 items pushed per operation (9 extra ejectItems calls)
+ *
+ * Implementation notes:
+ *  In MC 26.1.2, setCooldown(8) is called inside tryMoveItems (not pushItemsTick).
+ *  We inject at TAIL of pushItemsTick. If cooldownTime == MOVE_ITEM_SPEED (8) at
+ *  that point, tryMoveItems just moved items this tick — we halve it and push more.
  */
 @Mixin(HopperBlockEntity.class)
 public abstract class SpeedHopperMixin implements IAeSpeedHopper {
@@ -42,8 +44,9 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
 
     // ── Interface ─────────────────────────────────────────────────────────────
 
-    @Override
-    public boolean ae$isSpeedHopper() { return ae_speedHopper; }
+    @Override public boolean ae$isSpeedHopper() { return ae_speedHopper; }
+    @Override public int ae$getCooldown()        { return cooldownTime; }
+    @Override public void ae$setCooldown(int v)  { cooldownTime = v; }
 
     // ── NBT persistence ───────────────────────────────────────────────────────
 
@@ -57,26 +60,25 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
         if (ae_speedHopper) output.putBoolean("ae_speed_hopper", true);
     }
 
-    // ── Half cooldown ─────────────────────────────────────────────────────────
+    // ── Speed logic ───────────────────────────────────────────────────────────
 
-    @Inject(method = "setCooldown", at = @At("HEAD"), cancellable = true, remap = false)
-    private void ae$setCooldown(int cooldown, CallbackInfo ci) {
-        if (!ae_speedHopper || cooldown <= 0) return;
-        this.cooldownTime = cooldown / 2;
-        ci.cancel();
-    }
-
-    // ── Extra item transfers ──────────────────────────────────────────────────
-
-    @Inject(method = "tryMoveItems", at = @At("RETURN"), remap = false)
-    private static void ae$afterTryMoveItems(Level level, BlockPos pos, BlockState state,
-            HopperBlockEntity blockEntity, BooleanSupplier operator,
-            CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValue()) return; // nothing moved
-        if (!((IAeSpeedHopper) blockEntity).ae$isSpeedHopper()) return;
-        // Vanilla already pushed/pulled 1 item; push up to 9 more.
+    /**
+     * Fires every tick at the end of pushItemsTick.
+     *
+     * When tryMoveItems moves items, it calls setCooldown(MOVE_ITEM_SPEED=8).
+     * At the TAIL of pushItemsTick, cooldownTime == 8 iff items were JUST moved
+     * this tick (any other positive value means the hopper was already waiting).
+     * We halve it to 4 ticks (double speed) then push up to 9 more items.
+     */
+    @Inject(method = "pushItemsTick", at = @At("TAIL"), remap = false)
+    private static void ae$pushItemsTick(Level level, BlockPos pos, BlockState state,
+            HopperBlockEntity hopper, CallbackInfo ci) {
+        IAeSpeedHopper sh = (IAeSpeedHopper) hopper;
+        if (!sh.ae$isSpeedHopper()) return;
+        if (sh.ae$getCooldown() != HopperBlockEntity.MOVE_ITEM_SPEED) return;
+        sh.ae$setCooldown(HopperBlockEntity.MOVE_ITEM_SPEED / 2);
         for (int i = 1; i < 10; i++) {
-            if (!ejectItems(level, pos, blockEntity)) break;
+            if (!ejectItems(level, pos, hopper)) break;
         }
     }
 }
