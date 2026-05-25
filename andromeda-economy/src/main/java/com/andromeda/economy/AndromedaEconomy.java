@@ -1,5 +1,6 @@
 package com.andromeda.economy;
 
+import com.andromeda.economy.IAeSpeedHopper;
 import com.andromeda.economy.command.*;
 import com.andromeda.economy.data.LotteryManager;
 import com.andromeda.economy.data.*;
@@ -10,13 +11,18 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import com.andromeda.economy.gui.EnderChestGui;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ClientboundPlayChannelEvents;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EnderChestBlock;
+import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.entity.EnderChestBlockEntity;
+import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -104,9 +110,31 @@ public class AndromedaEconomy implements ModInitializer {
             registryAccess = server.registryAccess();
             prices.addEnchantedBooks(server);
             prices.addPotions(server);
+            prices.initSpeedHopper();
             ScoreboardHud.cleanupLegacyTeams(server); // remove stale rank-abbrev teams
             // Fetch live Bitcoin price immediately on start
             bitcoinPrice.fetchAndApply(server);
+        });
+
+        // Speed Hopper: override block break to drop the custom item instead of a vanilla hopper
+        PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
+            if (level.isClientSide()) return true;
+            if (!(blockEntity instanceof HopperBlockEntity)) return true;
+            if (!((IAeSpeedHopper) blockEntity).ae$isSpeedHopper()) return true;
+
+            // Play break effect (particles + sound), remove block, no vanilla drops
+            level.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, pos, Block.getId(state));
+            level.removeBlock(pos, false);
+
+            // Award mining stat and food exhaustion (mirrors Block.playerDestroy)
+            player.awardStat(Stats.BLOCK_MINED.get(state.getBlock()));
+            player.causeFoodExhaustion(0.005F);
+
+            // Drop Speed Hopper item (skip in creative)
+            if (!player.isCreative()) {
+                Block.popResource(level, pos, SpeedHopperItem.createItem(1));
+            }
+            return false; // cancel vanilla processing
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {

@@ -2,6 +2,7 @@ package com.andromeda.economy.gui;
 
 import com.andromeda.economy.AndromedaEconomy;
 import com.andromeda.economy.EconomyUtils;
+import com.andromeda.economy.SpeedHopperItem;
 import com.andromeda.economy.data.PriceManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -143,6 +144,10 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
+        // Speed Hopper
+        if (shopId.equals(SpeedHopperItem.SHOP_ID)) {
+            return SpeedHopperItem.createItem(count);
+        }
         // Bitcoin — Command Block named "Bitcoin" (admin item, can't be farmed)
         if (shopId.equals("bitcoin")) {
             ItemStack btc = new ItemStack(Items.COMMAND_BLOCK, count);
@@ -188,6 +193,7 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
+        if (shopId.equals(SpeedHopperItem.SHOP_ID)) return "Speed Hopper";
         if (shopId.equals("bitcoin"))         return "₿ Bitcoin";
         if (shopId.startsWith("firework_rocket:")) {
             int dur = Integer.parseInt(shopId.substring("firework_rocket:".length()));
