@@ -528,18 +528,6 @@ public class PriceManager {
 
     private static final List<String> BITCOIN_TAGS = List.of("bitcoin", "btc", "crypto", "command", "block");
 
-    /**
-     * Adds the Speed Hopper to the shop at 2× the vanilla hopper price.
-     * Called once on server start so the price is always in sync with the hopper anchor.
-     */
-    public void initSpeedHopper() {
-        double hopperPrice = getBuyPrice("minecraft:hopper");
-        if (hopperPrice <= 0) hopperPrice = 5_000.0; // fallback if hopper has no anchor
-        double speedPrice = hopperPrice * 2.0;
-        prices.put(com.andromeda.economy.SpeedHopperItem.SHOP_ID,
-            new PriceEntry(speedPrice, List.of("speed", "hopper", "andromeda", "fast", "transfer")));
-    }
-
     /** Seeds the in-memory Bitcoin entry on startup (before first API call). */
     public void initBitcoin(double initialPrice) {
         prices.put("bitcoin",                    new PriceEntry(initialPrice, BITCOIN_TAGS));

@@ -4,8 +4,7 @@
   "package": "com.andromeda.economy.server.mixin",
   "compatibilityLevel": "JAVA_21",
   "server": [
-    "ServerPlayerTabListMixin",
-    "SpeedHopperMixin"
+    "ServerPlayerTabListMixin"
   ],
   "injectors": {
     "defaultRequire": 1
