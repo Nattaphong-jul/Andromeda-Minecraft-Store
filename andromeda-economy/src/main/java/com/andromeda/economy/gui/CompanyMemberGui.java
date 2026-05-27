@@ -23,7 +23,6 @@ import net.minecraft.world.item.component.ItemLore;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * My Company page — 54-slot chest.
@@ -69,17 +68,14 @@ public class CompanyMemberGui extends ChestMenu {
         for (int i = 0; i < 54; i++) inv.setItem(i, glass.copy());
 
         // Build ordered list: owner first, then members
-        List<Map.Entry<String, Integer>> slots = new ArrayList<>();
-        // Owner entry uses -1 as a sentinel for "auto-calculated"
-        slots.add(Map.entry(company.ownerUUID, -1));
-        for (var e : company.memberShares.entrySet()) slots.add(e);
+        List<String> slots = new ArrayList<>();
+        slots.add(company.ownerUUID);
+        slots.addAll(company.memberShares.keySet());
 
         int maxSlots = Math.min(slots.size(), SLOT_BACK);
         for (int i = 0; i < maxSlots; i++) {
-            var entry = slots.get(i);
-            String uuid = entry.getKey();
+            String uuid = slots.get(i);
             boolean isOwner = uuid.equals(company.ownerUUID);
-            int pct = isOwner ? company.ownerShare() : entry.getValue();
 
             PlayerData data = AndromedaEconomy.db.getPlayer(uuid);
             String name = data != null ? data.username : "Unknown";
@@ -88,8 +84,7 @@ public class CompanyMemberGui extends ChestMenu {
             skull.set(DataComponents.CUSTOM_NAME,
                 Component.literal(name).withStyle(isOwner ? ChatFormatting.GOLD : ChatFormatting.WHITE));
             skull.set(DataComponents.LORE, new ItemLore(List.of(
-                Component.literal(isOwner ? "Owner" : "Member").withStyle(ChatFormatting.GRAY),
-                Component.literal("Share: " + pct + "%").withStyle(ChatFormatting.YELLOW)
+                Component.literal(isOwner ? "Owner" : "Member").withStyle(ChatFormatting.GRAY)
             )));
             ShopGui.markDisplay(skull);
             inv.setItem(i, skull);

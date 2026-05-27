@@ -8,7 +8,6 @@ import com.andromeda.economy.data.PlayerData;
 import com.andromeda.economy.gui.CompanyGui;
 import com.andromeda.economy.gui.CompanyMemberGui;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -56,20 +55,6 @@ public class CompanyCommand {
                         return b.buildFuture();
                     })
                     .executes(ctx -> kick(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
-            .then(Commands.literal("setshare")
-                .then(Commands.argument("player", StringArgumentType.word())
-                    .suggests((ctx, b) -> {
-                        String prefix = b.getRemaining().toLowerCase(Locale.ROOT);
-                        ctx.getSource().getServer().getPlayerList().getPlayers().forEach(p -> {
-                            if (p.getName().getString().toLowerCase(Locale.ROOT).startsWith(prefix))
-                                b.suggest(p.getName().getString());
-                        });
-                        return b.buildFuture();
-                    })
-                    .then(Commands.argument("percent", IntegerArgumentType.integer(0, 100))
-                        .executes(ctx -> setShare(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "player"),
-                            IntegerArgumentType.getInteger(ctx, "percent"))))))
             .then(Commands.literal("leave")
                 .executes(ctx -> leave(ctx.getSource())))
             .then(Commands.literal("transfer")
@@ -275,39 +260,6 @@ public class CompanyCommand {
         return 1;
     }
 
-    private static int setShare(CommandSourceStack source, String playerName, int percent) {
-        if (!(source.getEntity() instanceof ServerPlayer owner)) return 0;
-        CompanyManager mgr = AndromedaEconomy.company;
-        CompanyData company = mgr.getByMember(owner.getStringUUID());
-        if (company == null || !company.isOwner(owner.getStringUUID())) {
-            owner.sendSystemMessage(Component.literal("You don't own a company.").withStyle(ChatFormatting.RED));
-            return 0;
-        }
-        String targetUUID = findUUIDByName(playerName, source);
-        if (targetUUID == null || !company.memberShares.containsKey(targetUUID)) {
-            owner.sendSystemMessage(Component.literal(
-                "'" + playerName + "' is not a member of your company."
-            ).withStyle(ChatFormatting.RED));
-            return 0;
-        }
-        int oldShare    = company.memberShares.getOrDefault(targetUUID, 0);
-        int othersTotal = company.memberShares.values().stream().mapToInt(Integer::intValue).sum() - oldShare;
-        if (othersTotal + percent > 100) {
-            owner.sendSystemMessage(Component.literal(
-                "Total member shares would exceed 100%. Max for this member: " + (100 - othersTotal) + "%"
-            ).withStyle(ChatFormatting.RED));
-            return 0;
-        }
-        mgr.setShare(company, targetUUID, percent);
-        owner.sendSystemMessage(
-            Component.literal(playerName + "'s share set to ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal(percent + "%").withStyle(ChatFormatting.GREEN))
-                .append(Component.literal(" — you keep ").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(company.ownerShare() + "%").withStyle(ChatFormatting.GOLD))
-        );
-        return 1;
-    }
-
     private static int leave(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) return 0;
         CompanyManager mgr = AndromedaEconomy.company;
@@ -429,14 +381,13 @@ public class CompanyCommand {
         player.sendSystemMessage(
             Component.literal("Owner: ").withStyle(ChatFormatting.WHITE)
                 .append(Component.literal(ownerName).withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(" (" + company.ownerShare() + "%)").withStyle(ChatFormatting.GRAY))
         );
-        for (var entry : company.memberShares.entrySet()) {
-            PlayerData md = AndromedaEconomy.db.getPlayer(entry.getKey());
-            String mName = md != null ? md.username : entry.getKey();
+        for (String memberUUID : company.memberShares.keySet()) {
+            PlayerData md = AndromedaEconomy.db.getPlayer(memberUUID);
+            String mName = md != null ? md.username : memberUUID;
             player.sendSystemMessage(
                 Component.literal("  " + mName).withStyle(ChatFormatting.WHITE)
-                    .append(Component.literal(" (" + entry.getValue() + "%)").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(" [Member]").withStyle(ChatFormatting.GRAY))
             );
         }
         player.sendSystemMessage(

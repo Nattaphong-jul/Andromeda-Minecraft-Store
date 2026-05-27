@@ -102,6 +102,7 @@ public class AndromedaEconomy implements ModInitializer {
             SpCommand.register(dispatcher);
             LotteryCommand.register(dispatcher);
             CompanyCommand.register(dispatcher);
+            AdminCommand.register(dispatcher);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
