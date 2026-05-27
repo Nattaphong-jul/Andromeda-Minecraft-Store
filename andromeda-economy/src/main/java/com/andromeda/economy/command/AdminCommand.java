@@ -101,7 +101,7 @@ public class AdminCommand {
                 .append(Component.literal(" to ").withStyle(ChatFormatting.YELLOW))
                 .append(Component.literal(displayName).withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(".").withStyle(ChatFormatting.YELLOW)),
-            true);
+            false);
         return 1;
     }
 
@@ -158,7 +158,7 @@ public class AdminCommand {
                 .append(Component.literal(displayName).withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(". New balance: ").withStyle(ChatFormatting.YELLOW))
                 .append(Component.literal(EconomyUtils.compact(newBalance) + " THB").withStyle(ChatFormatting.GREEN)),
-            true);
+            false);
         return 1;
     }
 
