@@ -96,8 +96,7 @@ public class LotteryCommand {
         long total   = ticks / 20;
         long hours   = total / 3600;
         long minutes = (total % 3600) / 60;
-        long seconds = total % 60;
-        String time  = String.format("%dh %02dm %02ds", hours, minutes, seconds);
+        String time  = String.format("%dh %02dm", hours, minutes);
         source.sendSuccess(() -> Component.literal("Draw in: ").withStyle(ChatFormatting.WHITE)
             .append(Component.literal(time).withStyle(ChatFormatting.YELLOW)), false);
 
@@ -106,8 +105,7 @@ public class LotteryCommand {
             long claimTotal   = claimTicks / 20;
             long claimHours   = claimTotal / 3600;
             long claimMinutes = (claimTotal % 3600) / 60;
-            long claimSeconds = claimTotal % 60;
-            String claimTime  = String.format("%dh %02dm %02ds", claimHours, claimMinutes, claimSeconds);
+            String claimTime  = String.format("%dh %02dm", claimHours, claimMinutes);
             String[] prevWin  = lottery.getPreviousWinningNumbers();
             source.sendSuccess(() -> Component.literal("Claim window: ").withStyle(ChatFormatting.WHITE)
                 .append(Component.literal("Open — closes in " + claimTime).withStyle(ChatFormatting.GREEN)), false);

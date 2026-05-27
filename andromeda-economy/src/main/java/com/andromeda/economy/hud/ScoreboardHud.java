@@ -182,8 +182,7 @@ public class ScoreboardHud {
         long total   = ticks / 20;
         long hours   = total / 3600;
         long minutes = (total % 3600) / 60;
-        long seconds = total % 60;
-        String time  = String.format("%dh %02dm %02ds", hours, minutes, seconds);
+        String time  = String.format("%dh %02dm", hours, minutes);
         return Component.literal("⏱ ").withStyle(ChatFormatting.DARK_AQUA)
             .append(Component.literal("Lottery ").withStyle(ChatFormatting.WHITE))
             .append(Component.literal(time).withStyle(ChatFormatting.DARK_AQUA));
