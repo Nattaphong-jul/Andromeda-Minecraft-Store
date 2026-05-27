@@ -13,13 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * Central rank utility shared by the HUD, overhead team system, and tab list Mixin.
  *
  * Rank tiers (by balance in THB):
- *   Unemployed  < 100K        – red
- *   Salary Man  100K–10M      – white
- *   Anutin      10M–100M      – blue
- *   CEO         100M–1B       – green
- *   MrBeast     1B–10B        – cyan
- *   CK          10B–500B      – light purple
- *   Elon Musk   > 500B        – gold
+ *   Unemployed  < 100K         – white
+ *   Salary Man  100K–10M       – white
+ *   Anutin      10M–100M       – blue
+ *   CEO         100M–1B        – dark green
+ *   MrBeast     1B–10B         – aqua
+ *   CK          10B–100B       – light purple
+ *   Jensen Huang 100B–500B     – green
+ *   Elon Musk   500B–1T        – gold
+ *   FED         ≥ 1T           – red
  */
 public final class RankManager {
 
@@ -29,25 +31,27 @@ public final class RankManager {
 
     public static final Map<String, ChatFormatting> RANKS = new LinkedHashMap<>();
     static {
-        RANKS.put("Unemployed",   ChatFormatting.RED);
+        RANKS.put("Unemployed",   ChatFormatting.WHITE);
         RANKS.put("Salary Man",   ChatFormatting.WHITE);
         RANKS.put("Anutin",       ChatFormatting.BLUE);
-        RANKS.put("CEO",          ChatFormatting.DARK_GREEN);   // dark green — distinct from Jensen Huang
+        RANKS.put("CEO",          ChatFormatting.DARK_GREEN);
         RANKS.put("MrBeast",      ChatFormatting.AQUA);
         RANKS.put("CK",           ChatFormatting.LIGHT_PURPLE);
-        RANKS.put("Jensen Huang", ChatFormatting.GREEN);         // bright green — NVIDIA colour
+        RANKS.put("Jensen Huang", ChatFormatting.GREEN);
         RANKS.put("Elon Musk",    ChatFormatting.GOLD);
+        RANKS.put("FED",          ChatFormatting.RED);
     }
 
     public static String rankName(double balance) {
-        if (balance >= 500_000_000_000.0) return "Elon Musk";
-        if (balance >= 100_000_000_000.0) return "Jensen Huang"; // 100B – 500B
-        if (balance >= 10_000_000_000.0)  return "CK";           // 10B  – 100B
-        if (balance >= 1_000_000_000.0)   return "MrBeast";
-        if (balance >= 100_000_000.0)     return "CEO";
-        if (balance >= 10_000_000.0)      return "Anutin";
-        if (balance >= 100_000.0)         return "Salary Man";
-        return "Unemployed";
+        if (balance >= 1_000_000_000_000.0) return "FED";          // ≥ 1T
+        if (balance >= 500_000_000_000.0)   return "Elon Musk";    // 500B – 1T
+        if (balance >= 100_000_000_000.0)   return "Jensen Huang"; // 100B – 500B
+        if (balance >= 10_000_000_000.0)    return "CK";           // 10B  – 100B
+        if (balance >= 1_000_000_000.0)     return "MrBeast";      // 1B   – 10B
+        if (balance >= 100_000_000.0)       return "CEO";          // 100M – 1B
+        if (balance >= 10_000_000.0)        return "Anutin";       // 10M  – 100M
+        if (balance >= 100_000.0)           return "Salary Man";   // 100K – 10M
+        return "Unemployed";                                        // < 100K
     }
 
     public static ChatFormatting rankColor(String rank) {
@@ -64,6 +68,7 @@ public final class RankManager {
             case "CK"           -> "CK";
             case "Jensen Huang" -> "JH";
             case "Elon Musk"    -> "EM";
+            case "FED"          -> "FED";
             default             -> "?";
         };
     }

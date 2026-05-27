@@ -98,20 +98,31 @@ public class CompanyManager {
      * Returns the amount the earner actually receives (their share %).
      * Also credits all other members their share and notifies online players.
      */
+    /**
+     * Distributes earnings within the company.
+     *
+     * The earner keeps 90 % of the amount.
+     * The remaining 10 % is split equally among all other company members
+     * (owner + members, excluding the earner).
+     * If the earner has no company or is the sole member, they keep 100 %.
+     */
     public double distribute(String earnerUUID, double amount, MinecraftServer server) {
         CompanyData company = getByMember(earnerUUID);
         if (company == null) return amount;
 
-        int earnerPct = company.shareOf(earnerUUID);
-        double earnerAmount = Math.floor(amount * earnerPct / 100.0);
+        List<String> others = allMemberUUIDs(company).stream()
+            .filter(uuid -> !uuid.equals(earnerUUID))
+            .toList();
 
-        // Give every other member their cut
-        for (String memberUUID : allMemberUUIDs(company)) {
-            if (memberUUID.equals(earnerUUID)) continue;
-            int pct = company.shareOf(memberUUID);
-            if (pct <= 0) continue;
-            double cut = Math.floor(amount * pct / 100.0);
-            AndromedaEconomy.db.addBalance(memberUUID, cut);
+        if (others.isEmpty()) return amount; // sole member — keep everything
+
+        double pool     = Math.floor(amount * 0.10);          // 10 % shared pool
+        double earnerAmount = amount - pool;                   // earner keeps 90 %
+        double cutEach  = Math.floor(pool / others.size());   // equal split
+
+        for (String memberUUID : others) {
+            if (cutEach <= 0) continue;
+            AndromedaEconomy.db.addBalance(memberUUID, cutEach);
 
             ServerPlayer online = server.getPlayerList()
                 .getPlayer(UUID.fromString(memberUUID));
@@ -121,7 +132,7 @@ public class CompanyManager {
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal("You received ")
                             .withStyle(ChatFormatting.WHITE))
-                        .append(Component.literal(EconomyUtils.compact(cut) + " THB")
+                        .append(Component.literal(EconomyUtils.compact(cutEach) + " THB")
                             .withStyle(ChatFormatting.GREEN))
                 );
                 AndromedaEconomy.hud.update(online);
