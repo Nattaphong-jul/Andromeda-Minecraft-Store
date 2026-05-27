@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   CK          10B–100B       – light purple
  *   Jensen Huang 100B–500B     – green
  *   Elon Musk   500B–1T        – gold
- *   FED         ≥ 1T           – red
+ *   FED         1T–2T          – red
+ *   Cheater     ≥ 2T           – black
  */
 public final class RankManager {
 
@@ -40,10 +41,12 @@ public final class RankManager {
         RANKS.put("Jensen Huang", ChatFormatting.GREEN);
         RANKS.put("Elon Musk",    ChatFormatting.GOLD);
         RANKS.put("FED",          ChatFormatting.RED);
+        RANKS.put("Cheater",      ChatFormatting.BLACK);
     }
 
     public static String rankName(double balance) {
-        if (balance >= 1_000_000_000_000.0) return "FED";          // ≥ 1T
+        if (balance >= 2_000_000_000_000.0) return "Cheater";      // ≥ 2T
+        if (balance >= 1_000_000_000_000.0) return "FED";          // 1T – 2T
         if (balance >= 500_000_000_000.0)   return "Elon Musk";    // 500B – 1T
         if (balance >= 100_000_000_000.0)   return "Jensen Huang"; // 100B – 500B
         if (balance >= 10_000_000_000.0)    return "CK";           // 10B  – 100B
@@ -69,6 +72,7 @@ public final class RankManager {
             case "Jensen Huang" -> "JH";
             case "Elon Musk"    -> "EM";
             case "FED"          -> "FED";
+            case "Cheater"      -> "CHT";
             default             -> "?";
         };
     }
