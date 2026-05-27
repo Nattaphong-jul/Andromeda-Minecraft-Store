@@ -7,6 +7,7 @@ import com.andromeda.economy.data.LotteryManager.PlayerLotteryData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.SimpleContainer;
@@ -27,17 +28,19 @@ import java.util.List;
 /**
  * Redeem page — 54-slot chest.
  *
- * Displays all tickets the player holds this round.
- * Winning tickets (during result window) are clickable to claim prizes.
- * Slot 49 : Close
- * Others  : black glass or ticket items starting from slot 0
+ * Slots 0..N-1 : previous-round tickets (claimable during claim window)
+ * Slots N..M   : current-round tickets (draw pending)
+ * Slot 45      : Close (bottom-left corner)
+ * All others   : black glass
  */
 public class LotteryRedeemGui extends ChestMenu {
 
-    private static final int SLOT_CLOSE = 45; // bottom-left corner
+    private static final int SLOT_CLOSE = 45;
 
     private final SimpleContainer inv;
     private final String playerUuid;
+    /** Number of previous-round ticket slots (0-based from slot 0). */
+    private int prevTicketCount = 0;
 
     private LotteryRedeemGui(int syncId, Inventory playerInv, SimpleContainer inv, ServerPlayer player) {
         super(MenuType.GENERIC_9x6, syncId, playerInv, inv, 6);
@@ -64,48 +67,80 @@ public class LotteryRedeemGui extends ChestMenu {
         inv.setItem(SLOT_CLOSE, closeBtn);
 
         LotteryManager lottery = AndromedaEconomy.lottery;
-        PlayerLotteryData data = lottery.getPlayerData(player.getStringUUID());
-        if (data == null || data.numbers.isEmpty()) return;
+        MinecraftServer server = player.level().getServer();
+        boolean claimOpen = lottery.isClaimWindowOpen(server);
 
-        String[] winNums = lottery.getCurrentWinningNumbers();
-        boolean resultWindow = lottery.isResultWindowActive();
+        int slot = 0;
 
-        for (int i = 0; i < data.numbers.size(); i++) {
-            inv.setItem(i, buildTicketStack(data, i, winNums, resultWindow));
+        // Previous-round tickets (claimable if claim window is open)
+        if (claimOpen) {
+            PlayerLotteryData prevData = lottery.getPreviousRoundData(player.getStringUUID());
+            if (prevData != null && !prevData.numbers.isEmpty()) {
+                String[] prevWinNums = lottery.getPreviousWinningNumbers();
+                int prevRoundId = lottery.getPreviousRoundId();
+                for (int i = 0; i < prevData.numbers.size(); i++) {
+                    inv.setItem(slot++, buildPrevTicket(prevData, i, prevWinNums, prevRoundId));
+                }
+            }
+        }
+        prevTicketCount = slot;
+
+        // Current-round tickets (draw pending — not claimable yet)
+        PlayerLotteryData currData = lottery.getPlayerData(player.getStringUUID());
+        if (currData != null && !currData.numbers.isEmpty()) {
+            int currRoundId = lottery.getCurrentRoundId();
+            for (int i = 0; i < currData.numbers.size(); i++) {
+                inv.setItem(slot++, buildCurrentTicket(currData.numbers.get(i), currRoundId));
+            }
         }
     }
 
-    private static ItemStack buildTicketStack(PlayerLotteryData data, int idx,
-                                               String[] winNums, boolean resultWindow) {
+    /** Builds a previous-round ticket item with win/lose/claimed lore. */
+    private static ItemStack buildPrevTicket(PlayerLotteryData data, int idx,
+                                              String[] winNums, int roundId) {
         String number = data.numbers.get(idx);
         ItemStack ticket = new ItemStack(Items.PAPER);
         ticket.set(DataComponents.CUSTOM_NAME,
             Component.literal("#" + number).withStyle(ChatFormatting.WHITE));
 
         List<Component> lore = new ArrayList<>();
-        if (!resultWindow) {
-            lore.add(Component.literal("Draw pending...").withStyle(ChatFormatting.GRAY));
-        } else {
-            boolean isWinner = false;
-            for (int t = 0; t < 3; t++) {
-                if (winNums[t].equals(number)) {
-                    isWinner = true;
-                    if (data.claimedTiers[t]) {
-                        lore.add(Component.literal("Claimed (Tier " + (t + 1) + ")")
-                            .withStyle(ChatFormatting.GRAY));
-                    } else {
-                        int count = Collections.frequency(data.numbers, number);
-                        double prize = count * LotteryManager.PRIZES[t];
-                        lore.add(Component.literal(
-                            "Winner! Tier " + (t + 1) + " — Click to claim " + EconomyUtils.compact(prize) + " THB")
-                            .withStyle(ChatFormatting.GREEN));
-                    }
+        lore.add(Component.literal("Round #" + roundId).withStyle(ChatFormatting.GRAY));
+
+        boolean isWinner = false;
+        for (int t = 0; t < 3; t++) {
+            if (winNums[t] != null && winNums[t].equals(number)) {
+                isWinner = true;
+                if (data.claimedTiers[t]) {
+                    lore.add(Component.literal("Claimed (Tier " + (t + 1) + ")")
+                        .withStyle(ChatFormatting.GRAY));
+                } else {
+                    int count = Collections.frequency(data.numbers, number);
+                    double prize = count * LotteryManager.PRIZES[t];
+                    lore.add(Component.literal(
+                        "★ Tier " + (t + 1) + " — Click to claim " + EconomyUtils.compact(prize) + " THB")
+                        .withStyle(ChatFormatting.GREEN));
                 }
             }
-            if (!isWinner) {
-                lore.add(Component.literal("No match this round").withStyle(ChatFormatting.RED));
-            }
         }
+        if (!isWinner) {
+            lore.add(Component.literal("No match this round").withStyle(ChatFormatting.RED));
+        }
+
+        ticket.set(DataComponents.LORE, new ItemLore(lore));
+        ShopGui.markDisplay(ticket);
+        return ticket;
+    }
+
+    /** Builds a current-round ticket item (draw pending). */
+    private static ItemStack buildCurrentTicket(String number, int roundId) {
+        ItemStack ticket = new ItemStack(Items.PAPER);
+        ticket.set(DataComponents.CUSTOM_NAME,
+            Component.literal("#" + number).withStyle(ChatFormatting.WHITE));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.literal("Round #" + roundId).withStyle(ChatFormatting.GRAY));
+        lore.add(Component.literal("Draw pending...").withStyle(ChatFormatting.GRAY));
+
         ticket.set(DataComponents.LORE, new ItemLore(lore));
         ShopGui.markDisplay(ticket);
         return ticket;
@@ -121,14 +156,18 @@ public class LotteryRedeemGui extends ChestMenu {
             return;
         }
 
+        // Only previous-round slots are clickable for claiming
+        if (slotId < 0 || slotId >= prevTicketCount) return;
+
         LotteryManager lottery = AndromedaEconomy.lottery;
-        if (!lottery.isResultWindowActive()) return;
+        MinecraftServer server = sp.level().getServer();
+        if (!lottery.isClaimWindowOpen(server)) return;
 
-        PlayerLotteryData data = lottery.getPlayerData(sp.getStringUUID());
-        if (data == null || slotId < 0 || slotId >= data.numbers.size()) return;
+        PlayerLotteryData prevData = lottery.getPreviousRoundData(sp.getStringUUID());
+        if (prevData == null || slotId >= prevData.numbers.size()) return;
 
-        String ticketNumber = data.numbers.get(slotId);
-        double prize = lottery.claimPrize(sp.getStringUUID(), ticketNumber);
+        String ticketNumber = prevData.numbers.get(slotId);
+        double prize = lottery.claimPrize(sp.getStringUUID(), ticketNumber, server);
         if (prize <= 0) return;
 
         AndromedaEconomy.db.addBalance(sp.getStringUUID(), prize);
@@ -138,10 +177,11 @@ public class LotteryRedeemGui extends ChestMenu {
             .withStyle(ChatFormatting.GREEN));
         AndromedaEconomy.hud.update(sp);
 
-        // Refresh ticket display in-place
-        String[] winNums = lottery.getCurrentWinningNumbers();
-        for (int i = 0; i < data.numbers.size(); i++) {
-            inv.setItem(i, buildTicketStack(data, i, winNums, true));
+        // Refresh previous-round ticket display in-place
+        String[] prevWinNums = lottery.getPreviousWinningNumbers();
+        int prevRoundId = lottery.getPreviousRoundId();
+        for (int i = 0; i < prevData.numbers.size(); i++) {
+            inv.setItem(i, buildPrevTicket(prevData, i, prevWinNums, prevRoundId));
         }
         broadcastChanges();
     }

@@ -20,8 +20,6 @@ public class LotteryCommand {
                 .executes(ctx -> open(ctx.getSource()))
                 .then(Commands.literal("forcedraw")
                     .executes(ctx -> forceDraw(ctx.getSource())))
-                .then(Commands.literal("skipresult")
-                    .executes(ctx -> skipResult(ctx.getSource())))
                 .then(Commands.literal("status")
                     .executes(ctx -> status(ctx.getSource())))
                 .then(Commands.literal("viewresult")
@@ -46,14 +44,6 @@ public class LotteryCommand {
         if (!isOp(source)) return 0;
         AndromedaEconomy.lottery.forceDraw(source.getServer());
         sendStatus(source);
-        return 1;
-    }
-
-    private static int skipResult(CommandSourceStack source) {
-        if (!isOp(source)) return 0;
-        AndromedaEconomy.lottery.forceEndResult(source.getServer());
-        source.sendSuccess(() -> Component.literal("[Lottery] Result window skipped. New round started.")
-            .withStyle(ChatFormatting.YELLOW), true);
         return 1;
     }
 
@@ -86,10 +76,6 @@ public class LotteryCommand {
             return 0;
         }
         LotteryManager lottery = AndromedaEconomy.lottery;
-        if (lottery.isResultWindowActive()) {
-            source.sendFailure(Component.literal("Cannot set numbers during the result window."));
-            return 0;
-        }
         lottery.setCurrentWinningNumber(tier - 1, number);
         source.sendSuccess(() -> Component.literal("[Lottery] Tier " + tier + " prize set to ")
             .withStyle(ChatFormatting.YELLOW)
@@ -100,31 +86,39 @@ public class LotteryCommand {
 
     private static void sendStatus(CommandSourceStack source) {
         LotteryManager lottery = AndromedaEconomy.lottery;
+        boolean claimOpen = lottery.isClaimWindowOpen(source.getServer());
+
         source.sendSuccess(() -> Component.literal("--- Lottery Status ---").withStyle(ChatFormatting.GOLD), false);
         source.sendSuccess(() -> Component.literal("Round: ").withStyle(ChatFormatting.WHITE)
             .append(Component.literal("#" + lottery.getCurrentRoundId()).withStyle(ChatFormatting.YELLOW)), false);
-        source.sendSuccess(() -> Component.literal("Phase: ").withStyle(ChatFormatting.WHITE)
-            .append(lottery.isResultWindowActive()
-                ? Component.literal("Result Window").withStyle(ChatFormatting.GREEN)
-                : Component.literal("Active (buying open)").withStyle(ChatFormatting.AQUA)), false);
-        if (lottery.isResultWindowActive()) {
-            String[] win = lottery.getCurrentWinningNumbers();
-            source.sendSuccess(() -> Component.literal("Winning numbers:").withStyle(ChatFormatting.WHITE), false);
+
+        long ticks   = lottery.getTicksUntilDraw(source.getServer());
+        long total   = ticks / 20;
+        long hours   = total / 3600;
+        long minutes = (total % 3600) / 60;
+        long seconds = total % 60;
+        String time  = String.format("%dh %02dm %02ds", hours, minutes, seconds);
+        source.sendSuccess(() -> Component.literal("Draw in: ").withStyle(ChatFormatting.WHITE)
+            .append(Component.literal(time).withStyle(ChatFormatting.YELLOW)), false);
+
+        if (claimOpen) {
+            long claimTicks   = lottery.getClaimWindowRemainingTicks(source.getServer());
+            long claimTotal   = claimTicks / 20;
+            long claimHours   = claimTotal / 3600;
+            long claimMinutes = (claimTotal % 3600) / 60;
+            long claimSeconds = claimTotal % 60;
+            String claimTime  = String.format("%dh %02dm %02ds", claimHours, claimMinutes, claimSeconds);
+            String[] prevWin  = lottery.getPreviousWinningNumbers();
+            source.sendSuccess(() -> Component.literal("Claim window: ").withStyle(ChatFormatting.WHITE)
+                .append(Component.literal("Open — closes in " + claimTime).withStyle(ChatFormatting.GREEN)), false);
+            source.sendSuccess(() -> Component.literal("Previous winning numbers (Round #" + lottery.getPreviousRoundId() + "):")
+                .withStyle(ChatFormatting.WHITE), false);
             source.sendSuccess(() -> Component.literal("  1st: ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal("#" + win[0]).withStyle(ChatFormatting.GOLD)), false);
+                .append(Component.literal("#" + prevWin[0]).withStyle(ChatFormatting.GOLD)), false);
             source.sendSuccess(() -> Component.literal("  2nd: ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal("#" + win[1]).withStyle(ChatFormatting.GOLD)), false);
+                .append(Component.literal("#" + prevWin[1]).withStyle(ChatFormatting.GOLD)), false);
             source.sendSuccess(() -> Component.literal("  3rd: ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal("#" + win[2]).withStyle(ChatFormatting.GOLD)), false);
-        } else {
-            long ticks   = lottery.getTicksUntilDraw(source.getServer());
-            long total   = ticks / 20;
-            long hours   = total / 3600;
-            long minutes = (total % 3600) / 60;
-            long seconds = total % 60;
-            String time  = String.format("%dh %02dm %02ds", hours, minutes, seconds);
-            source.sendSuccess(() -> Component.literal("Draw in: ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal(time).withStyle(ChatFormatting.YELLOW)), false);
+                .append(Component.literal("#" + prevWin[2]).withStyle(ChatFormatting.GOLD)), false);
         }
     }
 

@@ -69,7 +69,18 @@
       "Bash(javap -p net/minecraft/server/ServerScoreboard.class)",
       "Bash(javap -p net/minecraft/network/protocol/game/ClientboundPlayerInfoUpdatePacket.class)",
       "Bash(gh release *)",
-      "Bash(Remove-Item -Recurse -Force build/classes,build/generated,build/resources -ErrorAction SilentlyContinue)"
+      "Bash(Remove-Item -Recurse -Force build/classes,build/generated,build/resources -ErrorAction SilentlyContinue)",
+      "Bash(javap -classpath \".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-52430b475d/26.1.2/minecraft-merged-52430b475d-26.1.2.jar\" -p \"net.minecraft.stats.StatType\")",
+      "Bash(javap -classpath \".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-52430b475d/26.1.2/minecraft-merged-52430b475d-26.1.2.jar\" -p \"net.minecraft.world.level.block.entity.BlockEntityType\")",
+      "Bash(javap -classpath \".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-52430b475d/26.1.2/minecraft-merged-52430b475d-26.1.2.jar\" -p \"net.minecraft.util.ProblemReporter\")",
+      "Bash(javap -p -verbose -classpath \".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-52430b475d/26.1.2/minecraft-merged-52430b475d-26.1.2.jar\" \"net.minecraft.world.level.block.LevelEvent\")",
+      "Bash(javap -classpath \".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-52430b475d/26.1.2/minecraft-merged-52430b475d-26.1.2.jar\" \"net.minecraft.world.level.storage.ValueInput\")",
+      "Bash(javap -classpath \".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-52430b475d/26.1.2/minecraft-merged-52430b475d-26.1.2.jar\" \"net.minecraft.nbt.CompoundTag\")",
+      "PowerShell(Stop-Process -Name java -Force -ErrorAction SilentlyContinue)",
+      "Bash(./gradlew shadowJar --info)",
+      "Bash(./gradlew build *)",
+      "Bash(javap -p ~/.gradle/caches/fabric-loom/26.1.2/minecraft-merged.jar net/minecraft/world/item/component/ResolvableProfile.class)",
+      "Bash(javap -p net/minecraft/world/item/component/ResolvableProfile.class)"
     ]
   }
 }

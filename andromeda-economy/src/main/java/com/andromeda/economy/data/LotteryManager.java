@@ -19,7 +19,6 @@ public class LotteryManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static final long ROUND_TICKS = 24L * 72_000L; // 24 real hours at 20 TPS
-    public static final long RESULT_WINDOW_TICKS = 24000L;
     public static final int MAX_TICKETS = 2;
     public static final double[] PRIZES = {200_000_000.0, 100_000_000.0, 50_000_000.0};
     public static final int POOL_SIZE = 36;
@@ -27,8 +26,8 @@ public class LotteryManager {
     private double ticketPrice = 100_000.0;
     private int currentRoundId = 1;
     private long roundStartTime = -1;
-    private boolean resultWindowActive = false;
-    private long resultWindowStartTime = 0;
+    /** World-time tick at which the claim window closes (-1 = no window open). */
+    private long claimWindowEndTime = -1L;
     private String[] currentWinningNumbers = {"", "", ""};
     private String[] previousWinningNumbers = {"", "", ""};
     private int previousRoundId = 0;
@@ -59,14 +58,8 @@ public class LotteryManager {
             save();
             return;
         }
-        if (resultWindowActive) {
-            if (worldTime - resultWindowStartTime >= RESULT_WINDOW_TICKS) {
-                endResultWindow(server);
-            }
-        } else {
-            if (worldTime - roundStartTime >= ROUND_TICKS) {
-                conductDraw(server);
-            }
+        if (worldTime - roundStartTime >= ROUND_TICKS) {
+            conductDraw(server);
         }
     }
 
@@ -95,10 +88,9 @@ public class LotteryManager {
     }
 
     private void conductDraw(MinecraftServer server) {
-        // Winning numbers already set at round start by generateRoundPool()
-        resultWindowActive = true;
-        resultWindowStartTime = server.overworld().getGameTime();
+        long worldTime = server.overworld().getGameTime();
 
+        // Notify winners in the round that just ended
         for (Map.Entry<String, PlayerLotteryData> e : playerData.entrySet()) {
             if (e.getValue().roundId != currentRoundId) continue;
             List<Integer> wonTiers = getWonTiers(e.getValue().numbers);
@@ -111,22 +103,24 @@ public class LotteryManager {
             }
         }
 
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            AndromedaEconomy.hud.update(player);
+        // Clear data from the PREVIOUS claim period (now 2 rounds old — expired)
+        if (previousRoundId > 0) {
+            int expiredRound = previousRoundId;
+            playerData.values().removeIf(d -> d.roundId == expiredRound);
         }
-        save();
-    }
+        pendingNotifications.clear();
 
-    private void endResultWindow(MinecraftServer server) {
+        // Archive current round as previous
         previousWinningNumbers = currentWinningNumbers.clone();
         previousRoundId = currentRoundId;
-        playerData.values().removeIf(d -> d.roundId == currentRoundId);
-        pendingNotifications.clear(); // result window closed — unclaimed prizes expire
+
+        // Start new round immediately — claim window runs concurrently for 24 h
         currentRoundId++;
-        roundStartTime = server.overworld().getGameTime();
-        resultWindowActive = false;
+        roundStartTime = worldTime;
         currentWinningNumbers = new String[]{"", "", ""};
-        generateRoundPool(); // immediately sets pool + winning numbers for the new round
+        claimWindowEndTime = worldTime + ROUND_TICKS;
+        generateRoundPool();
+
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             AndromedaEconomy.hud.update(player);
         }
@@ -170,9 +164,17 @@ public class LotteryManager {
         return d.numbers.size();
     }
 
+    /** Returns this round's ticket data, or null if the player has none this round. */
     public PlayerLotteryData getPlayerData(String uuid) {
         PlayerLotteryData d = playerData.get(uuid);
         if (d == null || d.roundId != currentRoundId) return null;
+        return d;
+    }
+
+    /** Returns the previous round's ticket data (for claiming), or null if none. */
+    public PlayerLotteryData getPreviousRoundData(String uuid) {
+        PlayerLotteryData d = playerData.get(uuid);
+        if (d == null || d.roundId != previousRoundId) return null;
         return d;
     }
 
@@ -195,14 +197,19 @@ public class LotteryManager {
         save();
     }
 
-    public double claimPrize(String uuid, String ticketNumber) {
-        if (!resultWindowActive) return 0;
+    /**
+     * Claims a prize for a previous-round ticket.
+     * Returns the amount earned (0 if window closed, wrong round, or already claimed).
+     */
+    public double claimPrize(String uuid, String ticketNumber, MinecraftServer server) {
+        long worldTime = server.overworld().getGameTime();
+        if (claimWindowEndTime < 0 || worldTime >= claimWindowEndTime) return 0;
         PlayerLotteryData d = playerData.get(uuid);
-        if (d == null || d.roundId != currentRoundId) return 0;
+        if (d == null || d.roundId != previousRoundId) return 0;
         double total = 0;
         int count = Collections.frequency(d.numbers, ticketNumber);
         for (int t = 0; t < 3; t++) {
-            if (currentWinningNumbers[t].equals(ticketNumber) && !d.claimedTiers[t]) {
+            if (previousWinningNumbers[t].equals(ticketNumber) && !d.claimedTiers[t]) {
                 d.claimedTiers[t] = true;
                 total += count * PRIZES[t];
             }
@@ -214,11 +221,7 @@ public class LotteryManager {
     // ── Admin helpers ──────────────────────────────────────────────────────────
 
     public void forceDraw(MinecraftServer server) {
-        if (!resultWindowActive) conductDraw(server);
-    }
-
-    public void forceEndResult(MinecraftServer server) {
-        if (resultWindowActive) endResultWindow(server);
+        conductDraw(server);
     }
 
     /**
@@ -243,17 +246,29 @@ public class LotteryManager {
     // ── Getters ───────────────────────────────────────────────────────────────
 
     public double getTicketPrice()               { return ticketPrice; }
-    public boolean isResultWindowActive()        { return resultWindowActive; }
     public int getCurrentRoundId()               { return currentRoundId; }
     public String[] getCurrentWinningNumbers()   { return currentWinningNumbers; }
     public String[] getPreviousWinningNumbers()  { return previousWinningNumbers; }
     public int getPreviousRoundId()              { return previousRoundId; }
     public String[] getRoundPool()               { return roundPool; }
+    public long getClaimWindowEndTime()          { return claimWindowEndTime; }
+
+    /** Returns true when a draw has happened and prizes can still be claimed. */
+    public boolean isClaimWindowOpen(MinecraftServer server) {
+        if (claimWindowEndTime < 0) return false;
+        return server.overworld().getGameTime() < claimWindowEndTime;
+    }
 
     public long getTicksUntilDraw(MinecraftServer server) {
-        if (resultWindowActive || roundStartTime < 0) return 0;
+        if (roundStartTime < 0) return 0;
         long worldTime = server.overworld().getGameTime();
         return Math.max(0, (roundStartTime + ROUND_TICKS) - worldTime);
+    }
+
+    public long getClaimWindowRemainingTicks(MinecraftServer server) {
+        if (claimWindowEndTime < 0) return 0;
+        long worldTime = server.overworld().getGameTime();
+        return Math.max(0, claimWindowEndTime - worldTime);
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
@@ -265,8 +280,7 @@ public class LotteryManager {
             root.addProperty("ticketPrice", ticketPrice);
             root.addProperty("currentRoundId", currentRoundId);
             root.addProperty("roundStartTime", roundStartTime);
-            root.addProperty("resultWindowActive", resultWindowActive);
-            root.addProperty("resultWindowStartTime", resultWindowStartTime);
+            root.addProperty("claimWindowEndTime", claimWindowEndTime);
             root.addProperty("previousRoundId", previousRoundId);
 
             JsonArray win = new JsonArray();
@@ -316,12 +330,11 @@ public class LotteryManager {
         try (Reader r = new FileReader(FILE)) {
             JsonObject root = GSON.fromJson(r, JsonObject.class);
             if (root == null) return;
-            if (root.has("ticketPrice"))           ticketPrice = root.get("ticketPrice").getAsDouble();
-            if (root.has("currentRoundId"))        currentRoundId = root.get("currentRoundId").getAsInt();
-            if (root.has("roundStartTime"))        roundStartTime = root.get("roundStartTime").getAsLong();
-            if (root.has("resultWindowActive"))    resultWindowActive = root.get("resultWindowActive").getAsBoolean();
-            if (root.has("resultWindowStartTime")) resultWindowStartTime = root.get("resultWindowStartTime").getAsLong();
-            if (root.has("previousRoundId"))       previousRoundId = root.get("previousRoundId").getAsInt();
+            if (root.has("ticketPrice"))        ticketPrice = root.get("ticketPrice").getAsDouble();
+            if (root.has("currentRoundId"))     currentRoundId = root.get("currentRoundId").getAsInt();
+            if (root.has("roundStartTime"))     roundStartTime = root.get("roundStartTime").getAsLong();
+            if (root.has("claimWindowEndTime")) claimWindowEndTime = root.get("claimWindowEndTime").getAsLong();
+            if (root.has("previousRoundId"))    previousRoundId = root.get("previousRoundId").getAsInt();
 
             if (root.has("currentWinningNumbers")) {
                 JsonArray arr = root.getAsJsonArray("currentWinningNumbers");
@@ -337,8 +350,7 @@ public class LotteryManager {
                 JsonArray arr = root.getAsJsonArray("roundPool");
                 roundPool = new String[arr.size()];
                 for (int i = 0; i < arr.size(); i++) roundPool[i] = arr.get(i).getAsString();
-            } else if (!resultWindowActive) {
-                // Migrate from old save format: generate pool now
+            } else {
                 generateRoundPool();
             }
             if (root.has("playerTickets")) {

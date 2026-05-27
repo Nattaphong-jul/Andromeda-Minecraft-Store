@@ -173,7 +173,7 @@ public class AndromedaEconomy implements ModInitializer {
             if (tick % 18_000 == 0 && tick > 0) bitcoinPrice.fetchAndApply(server);
             // Lottery draw timing (checked every tick for accuracy)
             lottery.tick(server);
-            if (tick % 20 == 0) {
+            if (tick % 80 == 0) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     hud.updatePingOnly(player);
                     hud.updateLotteryLine(player);

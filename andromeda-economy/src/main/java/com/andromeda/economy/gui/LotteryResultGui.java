@@ -24,43 +24,42 @@ import java.util.List;
 /**
  * Lottery Result page — 54-slot chest.
  *
- * Shows the 3 winning numbers (current if in result window, previous otherwise).
+ * Always shows the most recent (previous-round) winning numbers.
+ * When the claim window is open they are highlighted as claimable.
  * Slot 11 : 1st Prize
  * Slot 13 : 2nd Prize
  * Slot 15 : 3rd Prize
- * Slot 49 : Close
+ * Slot 45 : Close
  * All others : black glass
  */
 public class LotteryResultGui extends ChestMenu {
 
     private static final int[] RESULT_SLOTS = {11, 13, 15};
-    private static final int SLOT_CLOSE = 45; // bottom-left corner
+    private static final int SLOT_CLOSE = 45;
 
     private final SimpleContainer inv;
 
-    private LotteryResultGui(int syncId, Inventory playerInv, SimpleContainer inv) {
+    private LotteryResultGui(int syncId, Inventory playerInv, SimpleContainer inv, ServerPlayer player) {
         super(MenuType.GENERIC_9x6, syncId, playerInv, inv, 6);
         this.inv = inv;
-        populate();
+        populate(player);
     }
 
     public static void open(ServerPlayer player) {
         SimpleContainer inv = new SimpleContainer(54);
         player.openMenu(new SimpleMenuProvider(
-            (syncId, playerInv, p) -> new LotteryResultGui(syncId, playerInv, inv),
+            (syncId, playerInv, p) -> new LotteryResultGui(syncId, playerInv, inv, player),
             Component.literal("Lottery Result")
         ));
     }
 
-    private void populate() {
+    private void populate(ServerPlayer player) {
         ItemStack glass = blackGlass();
         for (int i = 0; i < 54; i++) inv.setItem(i, glass.copy());
 
         LotteryManager lottery = AndromedaEconomy.lottery;
-        boolean resultWindow = lottery.isResultWindowActive();
-        String[] numbers = resultWindow
-            ? lottery.getCurrentWinningNumbers()
-            : lottery.getPreviousWinningNumbers();
+        boolean claimOpen = lottery.isClaimWindowOpen(player.level().getServer());
+        String[] numbers = lottery.getPreviousWinningNumbers();
         boolean hasPrevious = lottery.getPreviousRoundId() > 0;
 
         String[] tierLabels = {"1st", "2nd", "3rd"};
@@ -73,10 +72,14 @@ public class LotteryResultGui extends ChestMenu {
             List<Component> lore = new ArrayList<>();
             lore.add(Component.literal("Prize: " + EconomyUtils.compact(LotteryManager.PRIZES[t]) + " THB")
                 .withStyle(ChatFormatting.GREEN));
-            if (!resultWindow) {
-                lore.add(hasPrevious
-                    ? Component.literal("Previous Round").withStyle(ChatFormatting.GRAY)
-                    : Component.literal("No results yet").withStyle(ChatFormatting.GRAY));
+            if (!hasPrevious) {
+                lore.add(Component.literal("No results yet").withStyle(ChatFormatting.GRAY));
+            } else if (claimOpen) {
+                lore.add(Component.literal("Round #" + lottery.getPreviousRoundId() + " — Claimable now!")
+                    .withStyle(ChatFormatting.AQUA));
+            } else {
+                lore.add(Component.literal("Round #" + lottery.getPreviousRoundId() + " — Previous Round")
+                    .withStyle(ChatFormatting.GRAY));
             }
             book.set(DataComponents.LORE, new ItemLore(lore));
             ShopGui.markDisplay(book);

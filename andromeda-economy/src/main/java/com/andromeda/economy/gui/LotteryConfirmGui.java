@@ -111,13 +111,8 @@ public class LotteryConfirmGui extends ChestMenu {
         LotteryManager lottery = AndromedaEconomy.lottery;
         double price = lottery.getTicketPrice();
 
-        if (lottery.isResultWindowActive()) {
-            sp.sendSystemMessage(Component.literal("Lottery is in result phase.").withStyle(ChatFormatting.RED));
-            AndromedaEconomy.playSound(sp, SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
         if (lottery.getTicketCount(sp.getStringUUID()) >= LotteryManager.MAX_TICKETS) {
-            sp.sendSystemMessage(Component.literal("You already have the maximum 5 tickets.").withStyle(ChatFormatting.RED));
+            sp.sendSystemMessage(Component.literal("You already have the maximum 2 tickets.").withStyle(ChatFormatting.RED));
             AndromedaEconomy.playSound(sp, SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
             return;
         }

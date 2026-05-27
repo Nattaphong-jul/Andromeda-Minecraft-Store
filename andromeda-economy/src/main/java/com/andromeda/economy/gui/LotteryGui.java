@@ -112,15 +112,9 @@ public class LotteryGui extends ChestMenu {
     private void handleTicketClick(ServerPlayer sp, int slotId) {
         LotteryManager lottery = AndromedaEconomy.lottery;
 
-        if (lottery.isResultWindowActive()) {
-            sp.connection.send(new ClientboundSetActionBarTextPacket(
-                Component.literal("Lottery is in result phase").withStyle(ChatFormatting.RED)));
-            AndromedaEconomy.playSound(sp, SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
         if (lottery.getTicketCount(sp.getStringUUID()) >= LotteryManager.MAX_TICKETS) {
             sp.connection.send(new ClientboundSetActionBarTextPacket(
-                Component.literal("You already have the maximum 5 tickets").withStyle(ChatFormatting.RED)));
+                Component.literal("You already have the maximum 2 tickets").withStyle(ChatFormatting.RED)));
             AndromedaEconomy.playSound(sp, SoundEvents.VILLAGER_NO, 1.0f, 1.0f);
             return;
         }

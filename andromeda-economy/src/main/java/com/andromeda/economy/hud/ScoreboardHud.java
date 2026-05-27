@@ -178,10 +178,6 @@ public class ScoreboardHud {
             return Component.literal("⏱ ").withStyle(ChatFormatting.DARK_AQUA)
                 .append(Component.literal("Lottery").withStyle(ChatFormatting.WHITE));
         }
-        if (lottery.isResultWindowActive()) {
-            return Component.literal("⏱ ").withStyle(ChatFormatting.DARK_AQUA)
-                .append(Component.literal("Showing Result").withStyle(ChatFormatting.DARK_AQUA));
-        }
         long ticks   = lottery.getTicksUntilDraw(server);
         long total   = ticks / 20;
         long hours   = total / 3600;
