@@ -121,6 +121,16 @@ public class LotteryManager {
         claimWindowEndTime = worldTime + ROUND_TICKS;
         generateRoundPool();
 
+        // Broadcast round-end to all online players
+        Component broadcast = Component.literal("[Lottery] ").withStyle(ChatFormatting.GOLD)
+            .append(Component.literal("Round #" + previousRoundId + " has ended! ")
+                .withStyle(ChatFormatting.WHITE))
+            .append(Component.literal("Winners notified. Prizes claimable for 24 hours.")
+                .withStyle(ChatFormatting.YELLOW));
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            p.sendSystemMessage(broadcast);
+        }
+
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             AndromedaEconomy.hud.update(player);
         }

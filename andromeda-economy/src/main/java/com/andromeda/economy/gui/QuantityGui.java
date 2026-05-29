@@ -121,7 +121,7 @@ public class QuantityGui extends ChestMenu {
         for (int i = 0; i < QTY_SLOTS.length; i++) {
             if (slotId == QTY_SLOTS[i]) {
                 long now = System.currentTimeMillis();
-                if (now - lastBuyMs < 400) return; // ignore rapid repeat clicks
+                if (now - lastBuyMs < 200) return; // ignore rapid repeat clicks
                 lastBuyMs = now;
                 attemptPurchase(sp, QUANTITIES[i]);
                 return;

@@ -294,6 +294,17 @@ public class PriceManager {
 
     public PriceManager() {
         if (!FILE.exists()) generate(); else loadFile();
+        ensureSpecialItems();
+    }
+
+    /** Ensures custom shop items that aren't in the Minecraft registry are always present. */
+    private void ensureSpecialItems() {
+        if (!prices.containsKey("ae:amethyst_pickaxe")) {
+            JsonObject root = loadRoot();
+            addEntry(root, "ae:amethyst_pickaxe", 100_000_000.0,
+                List.of("amethyst", "pickaxe", "netherite", "9x9", "mining"));
+            saveRoot(root);
+        }
     }
 
     private void generate() {

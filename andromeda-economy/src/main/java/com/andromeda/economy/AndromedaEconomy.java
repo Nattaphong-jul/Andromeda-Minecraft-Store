@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import com.andromeda.economy.gui.EnderChestGui;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ClientboundPlayChannelEvents;
 import net.minecraft.world.InteractionResult;
@@ -156,6 +157,14 @@ public class AndromedaEconomy implements ModInitializer {
             return true;
         });
 
+        // Amethyst Pickaxe — 9x9 area mine on block break
+        PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, be) -> {
+            if (level instanceof net.minecraft.server.level.ServerLevel sl
+                    && player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                AmethystPickaxeHandler.onBlockBroken(sl, sp, pos, state);
+            }
+        });
+
         ServerLivingEntityEvents.AFTER_DEATH.register((LivingEntity entity, DamageSource src) -> {
             if (entity instanceof ServerPlayer victim) {
                 // PvP: killer steals 10 % of victim's balance
@@ -174,6 +183,8 @@ public class AndromedaEconomy implements ModInitializer {
             int tick = server.getTickCount();
             // Refresh Bitcoin price every 15 minutes (18 000 ticks)
             if (tick % 18_000 == 0 && tick > 0) bitcoinPrice.fetchAndApply(server);
+            // Amethyst Pickaxe 9x9 preview particles (every 3 ticks)
+            if (tick % 3 == 0) AmethystPickaxeHandler.tickParticles(server);
             // Lottery draw timing (checked every tick for accuracy)
             lottery.tick(server);
             if (tick % 80 == 0) {

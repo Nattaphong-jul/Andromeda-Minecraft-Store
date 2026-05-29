@@ -99,6 +99,18 @@ public class ShopGui extends ChestMenu {
 
     private ItemStack makeShopStack(String shopId, PriceManager.PriceEntry entry) {
         ItemStack stack = createStack(shopId, 1);
+
+        // Amethyst Pickaxe keeps its purple name and gets extended lore
+        if (shopId.equals("ae:amethyst_pickaxe")) {
+            stack.set(DataComponents.LORE, new ItemLore(List.of(
+                Component.literal(EconomyUtils.compact(entry.price) + " THB").withStyle(ChatFormatting.GREEN),
+                Component.literal("Mines 9×9 area").withStyle(ChatFormatting.LIGHT_PURPLE),
+                Component.literal("Efficiency V · Fortune III · Unbreaking III · Mending").withStyle(ChatFormatting.GRAY)
+            )));
+            markDisplay(stack);
+            return stack;
+        }
+
         stack.set(DataComponents.CUSTOM_NAME,
             Component.literal(displayName(shopId)).withStyle(ChatFormatting.WHITE));
         stack.set(DataComponents.LORE, new ItemLore(List.of(
@@ -142,6 +154,10 @@ public class ShopGui extends ChestMenu {
                     return pot;
                 }
             }
+        }
+        // Amethyst Pickaxe — enchanted netherite pickaxe with 9x9 mining ability
+        if (shopId.equals("ae:amethyst_pickaxe")) {
+            return com.andromeda.economy.AmethystPickaxe.create();
         }
         // Bitcoin — Command Block named "Bitcoin" (admin item, can't be farmed)
         if (shopId.equals("bitcoin")) {
@@ -188,6 +204,7 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
+        if (shopId.equals("ae:amethyst_pickaxe")) return "Amethyst Pickaxe";
         if (shopId.equals("bitcoin"))         return "₿ Bitcoin";
         if (shopId.startsWith("firework_rocket:")) {
             int dur = Integer.parseInt(shopId.substring("firework_rocket:".length()));
@@ -244,7 +261,7 @@ public class ShopGui extends ChestMenu {
 
         if (slotId == SLOT_PREV || slotId == SLOT_NEXT) {
             long now = System.currentTimeMillis();
-            if (now - lastNavMs < 400) return; // debounce double-click
+            if (now - lastNavMs < 150) return; // debounce double-click
             lastNavMs = now;
             boolean turned = false;
             if (slotId == SLOT_PREV && page > 0)        { page--; populatePage(); broadcastChanges(); turned = true; }
