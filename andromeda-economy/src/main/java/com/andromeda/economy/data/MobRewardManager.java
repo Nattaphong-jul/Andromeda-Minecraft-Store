@@ -17,57 +17,75 @@ public class MobRewardManager {
     private static final File FILE = new File("config/andromeda-economy/mob_rewards.json");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    /**
+     * Kill reward balancing rationale:
+     *
+     * Drop value context (sell at 85%):
+     *   rotten flesh 43, arrow 85, bone 255, gunpowder 4.25K, string 425,
+     *   spider eye 850, ender pearl 8.5K, blaze rod 42.5K, ghast tear 68K,
+     *   phantom membrane 17K, shulker shell 170K, wither skull 425K, nether star 4.25M
+     *
+     * Formula goal: kill reward ≈ 10–30% of average expected drop sell value,
+     * so killing is worthwhile but drops remain the primary income.
+     * Bosses are an exception — reward scales with difficulty not just drops.
+     */
     private static final Map<String, Double> DEFAULTS = new LinkedHashMap<>();
     static {
         // ── Common overworld ─────────────────────────────────────────────────
-        DEFAULTS.put("minecraft:zombie",            1_000.0);
-        DEFAULTS.put("minecraft:husk",              1_000.0);
-        DEFAULTS.put("minecraft:drowned",           1_500.0);
-        DEFAULTS.put("minecraft:skeleton",          1_000.0);
-        DEFAULTS.put("minecraft:stray",             1_000.0);
-        DEFAULTS.put("minecraft:spider",            1_000.0);
-        DEFAULTS.put("minecraft:cave_spider",       2_000.0);
-        DEFAULTS.put("minecraft:creeper",           2_500.0);
-        DEFAULTS.put("minecraft:witch",             2_500.0);
-        DEFAULTS.put("minecraft:slime",             1_000.0);
-        DEFAULTS.put("minecraft:silverfish",          500.0);
-        DEFAULTS.put("minecraft:endermite",           500.0);
-        DEFAULTS.put("minecraft:phantom",           3_000.0);
+        // avg drops ~50–500 THB sell value; reward = small bonus
+        DEFAULTS.put("minecraft:zombie",              1_000.0);
+        DEFAULTS.put("minecraft:husk",                1_000.0);
+        DEFAULTS.put("minecraft:drowned",             2_000.0);  // copper + trident chance
+        DEFAULTS.put("minecraft:skeleton",            1_000.0);
+        DEFAULTS.put("minecraft:stray",               1_500.0);  // slowness arrows
+        DEFAULTS.put("minecraft:bogged",              1_500.0);  // new skeleton variant
+        DEFAULTS.put("minecraft:spider",              1_000.0);
+        DEFAULTS.put("minecraft:cave_spider",         2_000.0);
+        DEFAULTS.put("minecraft:creeper",             3_000.0);  // gunpowder 4.25K sell
+        DEFAULTS.put("minecraft:witch",               3_000.0);  // potion drops ~3.4K sell
+        DEFAULTS.put("minecraft:slime",               1_500.0);  // slimeball 1.7K sell
+        DEFAULTS.put("minecraft:silverfish",            500.0);
+        DEFAULTS.put("minecraft:endermite",             500.0);
+        DEFAULTS.put("minecraft:phantom",             5_000.0);  // membrane 17K, hard to kill at night
+        DEFAULTS.put("minecraft:zombie_villager",     1_000.0);
+        DEFAULTS.put("minecraft:piglin",              1_000.0);
+
         // ── Mid-tier ─────────────────────────────────────────────────────────
-        DEFAULTS.put("minecraft:enderman",          5_000.0);
-        DEFAULTS.put("minecraft:pillager",          2_000.0);
-        DEFAULTS.put("minecraft:vindicator",        3_000.0);
-        DEFAULTS.put("minecraft:evoker",           15_000.0);
-        DEFAULTS.put("minecraft:ravager",          20_000.0);
-        DEFAULTS.put("minecraft:guardian",          5_000.0);
-        DEFAULTS.put("minecraft:shulker",          10_000.0);
+        DEFAULTS.put("minecraft:enderman",            5_000.0);  // ender pearl 8.5K sell
+        DEFAULTS.put("minecraft:pillager",            3_000.0);  // crossbow chance
+        DEFAULTS.put("minecraft:vindicator",          5_000.0);  // harder melee, emerald drop
+        DEFAULTS.put("minecraft:evoker",             25_000.0);  // totem 85K sell, always drops
+        DEFAULTS.put("minecraft:vex",                 3_000.0);  // evoker minion, no drops
+        DEFAULTS.put("minecraft:ravager",            30_000.0);  // very tanky, saddle 17K sell
+        DEFAULTS.put("minecraft:guardian",            5_000.0);  // prismarine 4.25K sell
+        DEFAULTS.put("minecraft:shulker",            20_000.0);  // shell 170K sell at ~50% chance
+
         // ── Nether ───────────────────────────────────────────────────────────
-        DEFAULTS.put("minecraft:blaze",            10_000.0);
-        DEFAULTS.put("minecraft:wither_skeleton",  10_000.0);
-        DEFAULTS.put("minecraft:ghast",             5_000.0);
-        DEFAULTS.put("minecraft:magma_cube",        2_000.0);
-        DEFAULTS.put("minecraft:piglin_brute",      8_000.0);
-        DEFAULTS.put("minecraft:zombified_piglin",  3_000.0);
-        DEFAULTS.put("minecraft:hoglin",            5_000.0);
-        DEFAULTS.put("minecraft:zoglin",            7_000.0);
+        DEFAULTS.put("minecraft:blaze",              10_000.0);  // rod 42.5K sell, ~50% drop
+        DEFAULTS.put("minecraft:wither_skeleton",    10_000.0);  // skull 425K sell, ~2.5% drop
+        DEFAULTS.put("minecraft:ghast",              10_000.0);  // tear 68K sell, rare drop
+        DEFAULTS.put("minecraft:magma_cube",          3_000.0);  // magma cream 8.5K sell
+        DEFAULTS.put("minecraft:piglin_brute",       10_000.0);  // dangerous, no unique drops
+        DEFAULTS.put("minecraft:zombified_piglin",    3_000.0);  // gold nugget 5.7K sell
+        DEFAULTS.put("minecraft:hoglin",              5_000.0);  // leather + porkchop
+        DEFAULTS.put("minecraft:zoglin",              8_000.0);  // no drops, dangerous
+
         // ── Bosses ───────────────────────────────────────────────────────────
-        DEFAULTS.put("minecraft:elder_guardian",   50_000.0);
-        DEFAULTS.put("minecraft:wither",          500_000.0);
-        DEFAULTS.put("minecraft:ender_dragon",  2_000_000.0);
+        // Rewards intentionally high — one-time or very rare encounters
+        DEFAULTS.put("minecraft:elder_guardian",     80_000.0);  // sponge 42.5K sell, temple effort
+        DEFAULTS.put("minecraft:wither",            500_000.0);  // nether star 4.25M sell
+        DEFAULTS.put("minecraft:ender_dragon",    2_000_000.0);  // dragon egg 42.5M sell (first kill)
+
         // ── New / trial chambers ─────────────────────────────────────────────
-        DEFAULTS.put("minecraft:breeze",           10_000.0);
-        DEFAULTS.put("minecraft:bogged",            1_000.0); // new skeleton variant
-        DEFAULTS.put("minecraft:creaking",         40_000.0); // pale garden mob
-        DEFAULTS.put("minecraft:warden",          600_000.0); // hardest to kill
-        DEFAULTS.put("minecraft:illusioner",      100_000.0); // rare
-        DEFAULTS.put("minecraft:vex",               9_000.0); // evoker minion
-        // ── Neutral mobs that can be hostile ─────────────────────────────────
-        DEFAULTS.put("minecraft:piglin",            1_000.0);
-        DEFAULTS.put("minecraft:zombie_villager",   1_000.0); // = zombie
-        DEFAULTS.put("minecraft:trader_llama",          0.0); // no reward or penalty
+        DEFAULTS.put("minecraft:breeze",             15_000.0);  // breeze rod 2.55K sell, trial chamber
+        DEFAULTS.put("minecraft:creaking",           50_000.0);  // pale garden, hard to locate+kill
+        DEFAULTS.put("minecraft:warden",            800_000.0);  // hardest overworld mob, no valuable drops
+        DEFAULTS.put("minecraft:illusioner",        100_000.0);  // extremely rare spawn
+
         // ── Penalties (negative = deduct from balance) ────────────────────────
-        DEFAULTS.put("minecraft:allay",            -5_000.0); // peaceful helper mob
-        DEFAULTS.put("minecraft:bee",                -500.0); // naturally defensive
+        DEFAULTS.put("minecraft:allay",             -10_000.0); // peaceful helper mob
+        DEFAULTS.put("minecraft:bee",                -1_000.0); // pollinator, important for ecosystem
+        DEFAULTS.put("minecraft:trader_llama",            0.0); // no reward, no penalty
     }
 
     private final Map<String, Double> rewards = new HashMap<>();
