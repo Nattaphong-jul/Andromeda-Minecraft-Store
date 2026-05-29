@@ -101,9 +101,9 @@ public final class AmethystPickaxeHandler {
      * The plane is perpendicular to the given axis (the axis the player is looking along).
      */
     static List<BlockPos> getPattern(BlockPos center, Direction.Axis axis) {
-        List<BlockPos> list = new ArrayList<>(81);
-        for (int a = -4; a <= 4; a++) {
-            for (int b = -4; b <= 4; b++) {
+        List<BlockPos> list = new ArrayList<>(9);
+        for (int a = -1; a <= 1; a++) {
+            for (int b = -1; b <= 1; b++) {
                 list.add(switch (axis) {
                     case X -> center.offset(0, a, b); // east/west face  → YZ plane
                     case Z -> center.offset(a, b, 0); // north/south face → XY plane

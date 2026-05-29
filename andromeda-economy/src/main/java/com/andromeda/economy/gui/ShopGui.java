@@ -104,7 +104,7 @@ public class ShopGui extends ChestMenu {
         if (shopId.equals("ae:amethyst_pickaxe")) {
             stack.set(DataComponents.LORE, new ItemLore(List.of(
                 Component.literal(EconomyUtils.compact(entry.price) + " THB").withStyle(ChatFormatting.GREEN),
-                Component.literal("Mines 9×9 area").withStyle(ChatFormatting.LIGHT_PURPLE),
+                Component.literal("Mines 3×3 area").withStyle(ChatFormatting.LIGHT_PURPLE),
                 Component.literal("Efficiency V · Fortune III · Unbreaking III · Mending").withStyle(ChatFormatting.GRAY)
             )));
             markDisplay(stack);
