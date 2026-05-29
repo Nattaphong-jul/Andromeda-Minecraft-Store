@@ -155,9 +155,13 @@ public class ShopGui extends ChestMenu {
                 }
             }
         }
-        // Amethyst Pickaxe — enchanted netherite pickaxe with 9x9 mining ability
+        // Amethyst Pickaxe — enchanted netherite pickaxe with 3x3 mining ability
         if (shopId.equals("ae:amethyst_pickaxe")) {
             return com.andromeda.economy.AmethystPickaxe.create();
+        }
+        // Speed Hopper — transfers 10 items per cycle
+        if (shopId.equals("ae:speed_hopper")) {
+            return com.andromeda.economy.SpeedHopperItem.create();
         }
         // Bitcoin — Command Block named "Bitcoin" (admin item, can't be farmed)
         if (shopId.equals("bitcoin")) {
@@ -205,6 +209,7 @@ public class ShopGui extends ChestMenu {
             }
         }
         if (shopId.equals("ae:amethyst_pickaxe")) return "Amethyst Pickaxe";
+        if (shopId.equals("ae:speed_hopper"))    return "Speed Hopper";
         if (shopId.equals("bitcoin"))         return "₿ Bitcoin";
         if (shopId.startsWith("firework_rocket:")) {
             int dur = Integer.parseInt(shopId.substring("firework_rocket:".length()));

@@ -305,6 +305,12 @@ public class PriceManager {
                 List.of("amethyst", "pickaxe", "netherite", "9x9", "mining"));
             saveRoot(root);
         }
+        if (!prices.containsKey("ae:speed_hopper")) {
+            JsonObject root = loadRoot();
+            addEntry(root, "ae:speed_hopper", 1_000_000.0,
+                List.of("speed", "hopper", "fast", "transfer", "10"));
+            saveRoot(root);
+        }
     }
 
     private void generate() {

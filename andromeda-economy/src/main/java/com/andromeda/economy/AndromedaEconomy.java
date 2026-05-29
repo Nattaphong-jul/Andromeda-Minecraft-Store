@@ -157,7 +157,25 @@ public class AndromedaEconomy implements ModInitializer {
             return true;
         });
 
-        // Amethyst Pickaxe — 9x9 area mine on block break
+        // Speed Hopper — return custom item (with glint + name) when broken
+        PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
+            if (!(blockEntity instanceof IAeSpeedHopper sh) || !sh.ae$isSpeedHopper()) return true;
+            if (!(level instanceof net.minecraft.server.level.ServerLevel sl)) return true;
+            // Remove block without vanilla drops, play break effect, give our item
+            sl.removeBlock(pos, false);
+            sl.levelEvent(2001, pos, net.minecraft.world.level.block.Block.getId(state));
+            net.minecraft.world.item.ItemStack item = SpeedHopperItem.create();
+            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                if (!sp.getInventory().add(item)) {
+                    net.minecraft.world.level.block.Block.popResource(sl, pos, item);
+                }
+            } else {
+                net.minecraft.world.level.block.Block.popResource(sl, pos, item);
+            }
+            return false; // cancel vanilla break so it doesn't drop a plain hopper
+        });
+
+        // Amethyst Pickaxe — 3x3 area mine on block break
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, be) -> {
             if (level instanceof net.minecraft.server.level.ServerLevel sl
                     && player instanceof net.minecraft.server.level.ServerPlayer sp) {
