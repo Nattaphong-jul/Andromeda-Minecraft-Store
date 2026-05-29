@@ -564,6 +564,60 @@ public class PriceManager {
         return 2_000.0;
     }
 
+    // ── More Sweet Treats compat ──────────────────────────────────────────────
+
+    private static final Map<String, Double> MST_ANCHORS = Map.of(
+        "apple_pie",            8_000.0,
+        "honey_cake",           8_000.0,
+        "choc_chip_muffin",     5_000.0,
+        "beetroot_brownie",     5_000.0,
+        "choc_honeycomb_cookie",4_000.0,
+        "turkish_delight",      4_000.0,
+        "caramel_slice",        3_000.0,
+        "chocolate_bar",        3_000.0,
+        "chocolate_ice_cream",  5_000.0,
+        "chocolate_milkshake",  4_000.0
+    );
+    // second map because Map.of limit is 10 entries
+    private static final Map<String, Double> MST_ANCHORS2 = Map.of(
+        "candy_apple",          3_000.0,
+        "caramel",              1_500.0,
+        "caramel_candy",        2_000.0,
+        "berry_candy",          2_000.0,
+        "melon_candy",          2_000.0,
+        "melon_lollipop",       2_500.0,
+        "melon_smoothie",       3_000.0,
+        "glow_berry_gummy",     3_000.0
+    );
+
+    public void addMoreSweetTreatsItems(MinecraftServer server) {
+        boolean loaded = BuiltInRegistries.ITEM.keySet().stream()
+            .anyMatch(id -> "more_sweet_treats".equals(id.getNamespace()));
+        if (!loaded) return;
+
+        JsonObject root = loadRoot();
+        boolean dirty = false;
+
+        for (Item item : BuiltInRegistries.ITEM) {
+            Identifier id = BuiltInRegistries.ITEM.getKey(item);
+            if (id == null || !"more_sweet_treats".equals(id.getNamespace())) continue;
+            String key = id.toString();
+            if (prices.containsKey(key)) continue;
+
+            String path = id.getPath();
+            double price = MST_ANCHORS.getOrDefault(path,
+                           MST_ANCHORS2.getOrDefault(path, 2_000.0));
+            List<String> tags = buildTags(id);
+            addEntry(root, key, price, tags);
+            dirty = true;
+        }
+
+        if (dirty) {
+            saveRoot(root);
+            AndromedaEconomy.LOGGER.info("[AndromedaEconomy] Added More Sweet Treats items to prices.json");
+        }
+    }
+
     private double enchantmentPrice(int weight) {
         if (weight >= 10) return rng(50_000,      200_000);
         if (weight >= 5)  return rng(200_000,    1_000_000);

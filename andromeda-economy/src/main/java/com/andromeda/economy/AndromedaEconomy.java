@@ -110,6 +110,7 @@ public class AndromedaEconomy implements ModInitializer {
             prices.addEnchantedBooks(server);
             prices.addPotions(server);
             prices.addBiomesOPlentyItems(server);
+            prices.addMoreSweetTreatsItems(server);
             ScoreboardHud.cleanupLegacyTeams(server); // remove stale rank-abbrev teams
             // Fetch live Bitcoin price immediately on start
             bitcoinPrice.fetchAndApply(server);
