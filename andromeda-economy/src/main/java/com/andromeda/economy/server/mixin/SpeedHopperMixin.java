@@ -70,11 +70,17 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
     @Inject(method = "loadAdditional", at = @At("TAIL"), remap = false)
     private void ae$load(ValueInput input, CallbackInfo ci) {
         ae_speedHopper = input.getBooleanOr(SpeedHopperItem.FLAG, false);
+        com.andromeda.economy.AndromedaEconomy.LOGGER.info(
+            "[SpeedHopperDEBUG] loadAdditional fired — flag={}", ae_speedHopper);
     }
 
     @Inject(method = "saveAdditional", at = @At("TAIL"), remap = false)
     private void ae$save(ValueOutput output, CallbackInfo ci) {
-        if (ae_speedHopper) output.putBoolean(SpeedHopperItem.FLAG, true);
+        if (ae_speedHopper) {
+            output.putBoolean(SpeedHopperItem.FLAG, true);
+            com.andromeda.economy.AndromedaEconomy.LOGGER.info(
+                "[SpeedHopperDEBUG] saveAdditional wrote flag=true");
+        }
     }
 
     // ── Speed logic ───────────────────────────────────────────────────────────
@@ -100,6 +106,10 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
             CallbackInfoReturnable<Boolean> cir) {
         IAeSpeedHopper sh = (IAeSpeedHopper) hopper;
         if (!sh.ae$isSpeedHopper()) return;
+
+        com.andromeda.economy.AndromedaEconomy.LOGGER.info(
+            "[SpeedHopperDEBUG] tryMoveItems fired on SPEED hopper at {} — cancelled={}",
+            pos, cir.isCancelled());
 
         if (cir.isCancelled()) {
             // Another mod handled this tick — add 9 extra ejects for Speed Hoppers

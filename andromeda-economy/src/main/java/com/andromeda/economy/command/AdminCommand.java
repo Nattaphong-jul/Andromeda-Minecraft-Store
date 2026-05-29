@@ -38,7 +38,26 @@ public class AdminCommand {
                             ctx.getSource(),
                             StringArgumentType.getString(ctx, "username"),
                             StringArgumentType.getString(ctx, "amount"))))))
+            .then(Commands.literal("speedhopper")
+                .executes(ctx -> giveSpeedHopper(ctx.getSource())))
         );
+    }
+
+    /** Gives the executing OP a Speed Hopper for testing. */
+    private static int giveSpeedHopper(CommandSourceStack source) {
+        if (!isOp(source)) {
+            source.sendFailure(Component.literal("You don't have permission to use this command."));
+            return 0;
+        }
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
+            source.sendFailure(Component.literal("Must be run by a player."));
+            return 0;
+        }
+        net.minecraft.world.item.ItemStack hopper = com.andromeda.economy.SpeedHopperItem.create(1);
+        if (!player.getInventory().add(hopper)) player.drop(hopper, false);
+        source.sendSuccess(() -> Component.literal("[Admin] Gave you a Speed Hopper.")
+            .withStyle(ChatFormatting.AQUA), false);
+        return 1;
     }
 
     private static CompletableFuture<Suggestions> suggestPlayers(
