@@ -6,32 +6,46 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.TypedEntityData;
-import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.item.component.CustomData;
 
 public final class SpeedHopperItem {
 
-    /** NBT key written into the block entity when the hopper is placed. */
+    /** NBT key stored in CustomData on the item AND in the block entity NBT. */
     public static final String FLAG = "ae_speed_hopper";
 
     private SpeedHopperItem() {}
 
-    public static ItemStack create() {
-        ItemStack stack = new ItemStack(Items.HOPPER);
+    /**
+     * Creates a Speed Hopper item stack with the given count.
+     *
+     * Uses CUSTOM_DATA (not BLOCK_ENTITY_DATA) so items remain stackable (max 64).
+     * The flag is transferred to the block entity by SpeedHopperPlaceMixin on placement,
+     * and persisted via SpeedHopperMixin saveAdditional/loadAdditional.
+     */
+    public static ItemStack create(int count) {
+        ItemStack stack = new ItemStack(Items.HOPPER, count);
 
         stack.set(DataComponents.CUSTOM_NAME,
             Component.literal("Speed Hopper")
                 .withStyle(s -> s.withColor(ChatFormatting.AQUA).withItalic(false)));
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 
-        // BLOCK_ENTITY_DATA uses TypedEntityData in MC 26.1.2.
-        // When the item is placed, MC calls TypedEntityData.loadInto(blockEntity, holderLookup)
-        // which merges the tag into the block entity via loadAdditional — our Mixin reads it there.
         CompoundTag tag = new CompoundTag();
         tag.putBoolean(FLAG, true);
-        stack.set(DataComponents.BLOCK_ENTITY_DATA,
-            TypedEntityData.of(BlockEntityType.HOPPER, tag));
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
 
         return stack;
+    }
+
+    /** Convenience overload for single items. */
+    public static ItemStack create() {
+        return create(1);
+    }
+
+    /** Returns true if this item is a Speed Hopper. */
+    public static boolean is(ItemStack stack) {
+        if (stack.isEmpty() || stack.getItem() != Items.HOPPER) return false;
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null && data.copyTag().contains(FLAG);
     }
 }

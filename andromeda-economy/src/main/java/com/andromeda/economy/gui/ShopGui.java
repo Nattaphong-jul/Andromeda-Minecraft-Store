@@ -161,7 +161,7 @@ public class ShopGui extends ChestMenu {
         }
         // Speed Hopper — transfers 10 items per cycle
         if (shopId.equals("ae:speed_hopper")) {
-            return com.andromeda.economy.SpeedHopperItem.create();
+            return com.andromeda.economy.SpeedHopperItem.create(count);
         }
         // Bitcoin — Command Block named "Bitcoin" (admin item, can't be farmed)
         if (shopId.equals("bitcoin")) {

@@ -16,20 +16,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Makes tagged hoppers transfer 10 items per cycle instead of 1.
+ * Adds Speed Hopper behaviour (10 items per cycle) to tagged HopperBlockEntities.
  *
- * Root cause of the previous failure:
- *   The flag was stored in CUSTOM_DATA on the item. MC only copies
- *   BLOCK_ENTITY_DATA into the block entity on placement; CUSTOM_DATA is
- *   ignored. So ae_speedHopper was always false and the speed code never ran.
- *   Fix: SpeedHopperItem now stores the flag in BLOCK_ENTITY_DATA.
+ * The flag is written to the block entity in two ways:
+ *   1. On placement: SpeedHopperPlaceMixin intercepts Block.setPlacedBy and calls
+ *      ae$setSpeedHopper(true) directly on the new block entity.
+ *   2. On reload: loadAdditional reads ae_speed_hopper from the saved NBT.
  *
- * How it works:
- *   pushItemsTick decrements cooldown each tick. When cooldown reaches 0 it
- *   calls tryMoveItems, which calls ejectItems once and then setCooldown(8).
- *   At the TAIL of pushItemsTick, cooldownTime == MOVE_ITEM_SPEED (8) iff
- *   items were just moved. We then call ejectItems 9 more times for a total
- *   of 10 items moved per 8-tick cycle.
+ * CUSTOM_DATA on the item is used instead of BLOCK_ENTITY_DATA so that Speed Hopper
+ * items remain stackable (max 64 per slot). BLOCK_ENTITY_DATA caps stacks to 1.
  */
 @Mixin(HopperBlockEntity.class)
 public abstract class SpeedHopperMixin implements IAeSpeedHopper {
@@ -45,11 +40,12 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
 
     // ── IAeSpeedHopper ────────────────────────────────────────────────────────
 
-    @Override public boolean ae$isSpeedHopper() { return ae_speedHopper; }
-    @Override public int     ae$getCooldown()   { return cooldownTime; }
-    @Override public void    ae$setCooldown(int v) { cooldownTime = v; }
+    @Override public boolean ae$isSpeedHopper()       { return ae_speedHopper; }
+    @Override public void    ae$setSpeedHopper(boolean v) { ae_speedHopper = v; }
+    @Override public int     ae$getCooldown()         { return cooldownTime; }
+    @Override public void    ae$setCooldown(int v)    { cooldownTime = v; }
 
-    // ── Persistence ───────────────────────────────────────────────────────────
+    // ── Persistence (reload from disk) ────────────────────────────────────────
 
     @Inject(method = "loadAdditional", at = @At("TAIL"), remap = false)
     private void ae$load(ValueInput input, CallbackInfo ci) {
@@ -63,15 +59,21 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
 
     // ── Speed logic ───────────────────────────────────────────────────────────
 
+    /**
+     * Fires at TAIL of pushItemsTick.
+     *
+     * cooldownTime is MOVE_ITEM_SPEED (8) only when tryMoveItems just succeeded
+     * (items were moved). We push 9 more items for a total of 10 per cycle.
+     *
+     * NOTE: requires HopperTheHedgehog to be REMOVED from the server.
+     * HTH changes the cooldown to a value != MOVE_ITEM_SPEED, breaking this check.
+     */
     @Inject(method = "pushItemsTick", at = @At("TAIL"), remap = false)
     private static void ae$pushItemsTick(Level level, BlockPos pos, BlockState state,
             HopperBlockEntity hopper, CallbackInfo ci) {
         IAeSpeedHopper sh = (IAeSpeedHopper) hopper;
         if (!sh.ae$isSpeedHopper()) return;
-        // cooldownTime == MOVE_ITEM_SPEED (8) only when ejectItems/suckInItems
-        // just succeeded this tick inside tryMoveItems.
         if (sh.ae$getCooldown() != HopperBlockEntity.MOVE_ITEM_SPEED) return;
-        // Push up to 9 more items — total 10 per 8-tick cycle.
         for (int i = 1; i < 10; i++) {
             if (!ejectItems(level, pos, hopper)) break;
         }
