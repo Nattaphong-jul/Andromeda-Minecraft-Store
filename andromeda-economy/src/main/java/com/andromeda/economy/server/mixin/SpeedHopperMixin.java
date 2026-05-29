@@ -14,17 +14,23 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.function.BooleanSupplier;
 
 /**
- * Adds Speed Hopper behaviour (10 items per cycle) to tagged HopperBlockEntities.
+ * Adds Speed Hopper behaviour (10 items per eject cycle) to tagged hoppers.
  *
- * The flag is written to the block entity in two ways:
- *   1. On placement: SpeedHopperPlaceMixin intercepts Block.setPlacedBy and calls
- *      ae$setSpeedHopper(true) directly on the new block entity.
- *   2. On reload: loadAdditional reads ae_speed_hopper from the saved NBT.
+ * Previous TAIL-on-pushItemsTick approach failed because HopperTheHedgehog
+ * injects into setCooldown(int) and changes the value BEFORE our check ran.
  *
- * CUSTOM_DATA on the item is used instead of BLOCK_ENTITY_DATA so that Speed Hopper
- * items remain stackable (max 64 per slot). BLOCK_ENTITY_DATA caps stacks to 1.
+ * New approach (same as HTH):
+ *   Inject INSIDE tryMoveItems right AFTER the first setCooldown(I)V call
+ *   (ordinal 0 = the one that fires after ejectItems succeeds).
+ *   At that point we know items were just ejected — no cooldown value check needed.
+ *   We call ejectItems 9 more times for a total of 10 per cycle.
+ *
+ * Works with or without HopperTheHedgehog on the server.
  */
 @Mixin(HopperBlockEntity.class)
 public abstract class SpeedHopperMixin implements IAeSpeedHopper {
@@ -45,7 +51,7 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
     @Override public int     ae$getCooldown()         { return cooldownTime; }
     @Override public void    ae$setCooldown(int v)    { cooldownTime = v; }
 
-    // ── Persistence (reload from disk) ────────────────────────────────────────
+    // ── Persistence ───────────────────────────────────────────────────────────
 
     @Inject(method = "loadAdditional", at = @At("TAIL"), remap = false)
     private void ae$load(ValueInput input, CallbackInfo ci) {
@@ -60,20 +66,28 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
     // ── Speed logic ───────────────────────────────────────────────────────────
 
     /**
-     * Fires at TAIL of pushItemsTick.
+     * Fires inside tryMoveItems immediately AFTER the first setCooldown call
+     * (ordinal=0), which only executes when ejectItems just succeeded.
      *
-     * cooldownTime is MOVE_ITEM_SPEED (8) only when tryMoveItems just succeeded
-     * (items were moved). We push 9 more items for a total of 10 per cycle.
-     *
-     * NOTE: requires HopperTheHedgehog to be REMOVED from the server.
-     * HTH changes the cooldown to a value != MOVE_ITEM_SPEED, breaking this check.
+     * No cooldown value check needed — the injection point guarantees items moved.
+     * Compatible with HopperTheHedgehog because we hook the setCooldown CALL,
+     * not the cooldown VALUE that HTH subsequently overwrites.
      */
-    @Inject(method = "pushItemsTick", at = @At("TAIL"), remap = false)
-    private static void ae$pushItemsTick(Level level, BlockPos pos, BlockState state,
-            HopperBlockEntity hopper, CallbackInfo ci) {
+    @Inject(
+        method = "tryMoveItems",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/level/block/entity/HopperBlockEntity;setCooldown:(I)V",
+            ordinal = 0,
+            shift = At.Shift.AFTER
+        ),
+        remap = false
+    )
+    private static void ae$afterEjectCooldown(Level level, BlockPos pos, BlockState state,
+            HopperBlockEntity hopper, BooleanSupplier bs,
+            CallbackInfoReturnable<Boolean> cir) {
         IAeSpeedHopper sh = (IAeSpeedHopper) hopper;
         if (!sh.ae$isSpeedHopper()) return;
-        if (sh.ae$getCooldown() != HopperBlockEntity.MOVE_ITEM_SPEED) return;
         for (int i = 1; i < 10; i++) {
             if (!ejectItems(level, pos, hopper)) break;
         }
