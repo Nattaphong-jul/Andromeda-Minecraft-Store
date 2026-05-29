@@ -19,62 +19,48 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.function.BooleanSupplier;
 
 /**
- * Speed Hopper — transfers 10 items per eject cycle.
+ * Speed Hopper: transfers 10 items per cycle.
  *
- * ── How the flag reaches the block entity ────────────────────────────────────
- * SpeedHopperItem.create() stores the flag in DataComponents.BLOCK_ENTITY_DATA
- * (TypedEntityData). When placed, BlockItem.place() triggers:
- *   TypedEntityData.loadInto(blockEntity, registries)
- *     → BlockEntity.loadCustomOnly(ValueInput)         [final]
- *       → BlockEntity.loadAdditional(ValueInput)       [our @Inject]
+ * ROOT CAUSE of all previous failures:
+ *   Every @Inject and @Shadow used remap=false. Fabric Loom remaps compiled
+ *   mod bytecode from Mojang names → Intermediary before shipping the JAR.
+ *   At runtime, Fabric loads Intermediary-named bytecode. With remap=false,
+ *   Mixin matched "loadAdditional" against Intermediary names like "m_11008_"
+ *   and found nothing — injections silently never fired.
  *
- * DataComponents.MAX_STACK_SIZE = 64 prevents BLOCK_ENTITY_DATA from capping
- * the item's max stack to 1.
- *
- * ── Why previous injection points failed ─────────────────────────────────────
- * - TAIL on pushItemsTick: HTH modifies cooldownTime ≠ MOVE_ITEM_SPEED before check
- * - AFTER INVOKE setCooldown inside tryMoveItems: HTH cancels tryMoveItems at HEAD,
- *   so its body (including the setCooldown call) never executes
- * - AFTER INVOKE tryMoveItems inside pushItemsTick: confirmed valid but cooldown
- *   check was still failing in certain scenarios with HTH active
- *
- * ── Correct approach (mirrors HopperTheHedgehog) ─────────────────────────────
- * @Inject at HEAD of tryMoveItems with priority 2000 (runs AFTER HTH, priority 1000).
- * - If HTH already ran (cir.isCancelled()): just push 9 more items for Speed Hoppers
- * - If nothing else ran: push 10 items ourselves, set cooldown, cancel with true
- * - If neither condition applies (nothing to eject): return without cancel
- *   so vanilla handles suck-in from containers above
+ *   Fix: remove remap=false everywhere. Loom writes a refmap.json at build
+ *   time that maps Mojang names → Intermediary. Mixin uses that refmap at
+ *   runtime and correctly resolves all targets.
  */
 @Mixin(value = HopperBlockEntity.class, priority = 2000)
 public abstract class SpeedHopperMixin implements IAeSpeedHopper {
 
     @Unique private boolean ae_speedHopper = false;
 
-    @Shadow(remap = false) private int cooldownTime;
+    @Shadow private int cooldownTime;
 
-    @Shadow(remap = false)
+    @Shadow
     private static boolean ejectItems(Level level, BlockPos pos, HopperBlockEntity hopper) {
         throw new AssertionError();
     }
 
     // ── IAeSpeedHopper ────────────────────────────────────────────────────────
 
-    @Override public boolean ae$isSpeedHopper()       { return ae_speedHopper; }
+    @Override public boolean ae$isSpeedHopper()           { return ae_speedHopper; }
     @Override public void    ae$setSpeedHopper(boolean v) { ae_speedHopper = v; }
-    @Override public int     ae$getCooldown()         { return cooldownTime; }
-    @Override public void    ae$setCooldown(int v)    { cooldownTime = v; }
+    @Override public int     ae$getCooldown()             { return cooldownTime; }
+    @Override public void    ae$setCooldown(int v)        { cooldownTime = v; }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
-    /** Called when block is placed (via TypedEntityData.loadInto → loadCustomOnly) and on chunk load. */
-    @Inject(method = "loadAdditional", at = @At("TAIL"), remap = false)
+    @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void ae$load(ValueInput input, CallbackInfo ci) {
         ae_speedHopper = input.getBooleanOr(SpeedHopperItem.FLAG, false);
         com.andromeda.economy.AndromedaEconomy.LOGGER.info(
             "[SpeedHopperDEBUG] loadAdditional fired — flag={}", ae_speedHopper);
     }
 
-    @Inject(method = "saveAdditional", at = @At("TAIL"), remap = false)
+    @Inject(method = "saveAdditional", at = @At("TAIL"))
     private void ae$save(ValueOutput output, CallbackInfo ci) {
         if (ae_speedHopper) {
             output.putBoolean(SpeedHopperItem.FLAG, true);
@@ -85,22 +71,7 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
 
     // ── Speed logic ───────────────────────────────────────────────────────────
 
-    /**
-     * Fires at HEAD of tryMoveItems (priority 2000 = runs after HTH at 1000).
-     *
-     * Case A — another mod already cancelled (e.g. HTH handled the transfer):
-     *   Push 9 more items for Speed Hoppers on top of what the other mod did.
-     *
-     * Case B — nothing else ran yet:
-     *   Push up to 10 items ourselves. If any moved, set cooldown and cancel.
-     *   If nothing moved, do NOT cancel — vanilla handles suck-in via BooleanSupplier.
-     */
-    @Inject(
-        method = "tryMoveItems",
-        at = @At("HEAD"),
-        cancellable = true,
-        remap = false
-    )
+    @Inject(method = "tryMoveItems", at = @At("HEAD"), cancellable = true)
     private static void ae$onTryMoveItems(Level level, BlockPos pos, BlockState state,
             HopperBlockEntity hopper, BooleanSupplier bs,
             CallbackInfoReturnable<Boolean> cir) {
@@ -108,24 +79,21 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
         if (!sh.ae$isSpeedHopper()) return;
 
         com.andromeda.economy.AndromedaEconomy.LOGGER.info(
-            "[SpeedHopperDEBUG] tryMoveItems fired on SPEED hopper at {} — cancelled={}",
-            pos, cir.isCancelled());
+            "[SpeedHopperDEBUG] tryMoveItems fired on SPEED hopper at {}", pos);
 
         if (cir.isCancelled()) {
-            // Another mod handled this tick — add 9 extra ejects for Speed Hoppers
             for (int i = 0; i < 9; i++) {
                 if (!ejectItems(level, pos, hopper)) break;
             }
             return;
         }
 
-        // Nothing else ran — handle eject ourselves
         boolean moved = false;
         for (int i = 0; i < 10; i++) {
             if (!ejectItems(level, pos, hopper)) break;
             moved = true;
         }
-        if (!moved) return; // nothing ejected — let vanilla handle suck-in
+        if (!moved) return;
 
         sh.ae$setCooldown(HopperBlockEntity.MOVE_ITEM_SPEED);
         cir.setReturnValue(true);
