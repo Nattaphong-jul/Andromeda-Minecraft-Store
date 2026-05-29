@@ -6,21 +6,23 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TypedEntityData;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public final class SpeedHopperItem {
 
-    /** NBT key stored in CustomData on the item AND in the block entity NBT. */
     public static final String FLAG = "ae_speed_hopper";
 
     private SpeedHopperItem() {}
 
     /**
-     * Creates a Speed Hopper item stack with the given count.
+     * Creates a Speed Hopper item.
      *
-     * Uses CUSTOM_DATA (not BLOCK_ENTITY_DATA) so items remain stackable (max 64).
-     * The flag is transferred to the block entity by SpeedHopperPlaceMixin on placement,
-     * and persisted via SpeedHopperMixin saveAdditional/loadAdditional.
+     * Uses BLOCK_ENTITY_DATA so the flag transfers automatically to the block entity
+     * when placed. Call chain: TypedEntityData.loadInto → BlockEntity.loadCustomOnly
+     * → BlockEntity.loadAdditional → our Mixin reads the flag.
+     *
+     * Sets MAX_STACK_SIZE = 64 to prevent BLOCK_ENTITY_DATA from capping stacks to 1.
      */
     public static ItemStack create(int count) {
         ItemStack stack = new ItemStack(Items.HOPPER, count);
@@ -29,23 +31,14 @@ public final class SpeedHopperItem {
             Component.literal("Speed Hopper")
                 .withStyle(s -> s.withColor(ChatFormatting.AQUA).withItalic(false)));
         stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        stack.set(DataComponents.MAX_STACK_SIZE, 64); // override the auto-1 cap from BLOCK_ENTITY_DATA
 
         CompoundTag tag = new CompoundTag();
         tag.putBoolean(FLAG, true);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        stack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(BlockEntityType.HOPPER, tag));
 
         return stack;
     }
 
-    /** Convenience overload for single items. */
-    public static ItemStack create() {
-        return create(1);
-    }
-
-    /** Returns true if this item is a Speed Hopper. */
-    public static boolean is(ItemStack stack) {
-        if (stack.isEmpty() || stack.getItem() != Items.HOPPER) return false;
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data != null && data.copyTag().contains(FLAG);
-    }
+    public static ItemStack create() { return create(1); }
 }

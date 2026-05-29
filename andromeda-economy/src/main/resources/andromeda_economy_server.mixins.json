@@ -5,8 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "server": [
     "ServerPlayerTabListMixin",
-    "SpeedHopperMixin",
-    "SpeedHopperPlaceMixin"
+    "SpeedHopperMixin"
   ],
   "injectors": {
     "defaultRequire": 1
