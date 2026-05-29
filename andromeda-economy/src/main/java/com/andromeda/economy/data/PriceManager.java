@@ -193,6 +193,51 @@ public class PriceManager {
         m.put("minecraft:music_disc_precipice",  500_000.0);
         // firework_rocket handled by duration variants below; firework_star stays
         m.put("minecraft:firework_star",           1_000.0);
+        // ── Spawn eggs (tiered by mob difficulty) ────────────────────────────
+        // Common overworld
+        m.put("minecraft:zombie_spawn_egg",              100_000.0);
+        m.put("minecraft:husk_spawn_egg",                100_000.0);
+        m.put("minecraft:drowned_spawn_egg",             150_000.0);
+        m.put("minecraft:zombie_villager_spawn_egg",     100_000.0);
+        m.put("minecraft:skeleton_spawn_egg",            100_000.0);
+        m.put("minecraft:stray_spawn_egg",               150_000.0);
+        m.put("minecraft:bogged_spawn_egg",              150_000.0);
+        m.put("minecraft:spider_spawn_egg",              100_000.0);
+        m.put("minecraft:cave_spider_spawn_egg",         200_000.0);
+        m.put("minecraft:creeper_spawn_egg",             200_000.0);
+        m.put("minecraft:witch_spawn_egg",               300_000.0);
+        m.put("minecraft:slime_spawn_egg",               200_000.0);
+        m.put("minecraft:silverfish_spawn_egg",           50_000.0);
+        m.put("minecraft:endermite_spawn_egg",            50_000.0);
+        m.put("minecraft:phantom_spawn_egg",             500_000.0);
+        // Mid-tier overworld / end
+        m.put("minecraft:enderman_spawn_egg",          1_000_000.0);
+        m.put("minecraft:guardian_spawn_egg",          1_000_000.0);
+        m.put("minecraft:elder_guardian_spawn_egg",   10_000_000.0);
+        m.put("minecraft:shulker_spawn_egg",           5_000_000.0);
+        m.put("minecraft:pillager_spawn_egg",            500_000.0);
+        m.put("minecraft:vindicator_spawn_egg",          500_000.0);
+        m.put("minecraft:evoker_spawn_egg",            3_000_000.0);
+        m.put("minecraft:vex_spawn_egg",                 300_000.0);
+        m.put("minecraft:ravager_spawn_egg",           2_000_000.0);
+        // Nether
+        m.put("minecraft:blaze_spawn_egg",             2_000_000.0);
+        m.put("minecraft:wither_skeleton_spawn_egg",   5_000_000.0);
+        m.put("minecraft:ghast_spawn_egg",             2_000_000.0);
+        m.put("minecraft:magma_cube_spawn_egg",          300_000.0);
+        m.put("minecraft:piglin_spawn_egg",              200_000.0);
+        m.put("minecraft:piglin_brute_spawn_egg",        500_000.0);
+        m.put("minecraft:zombified_piglin_spawn_egg",    200_000.0);
+        m.put("minecraft:hoglin_spawn_egg",              300_000.0);
+        m.put("minecraft:zoglin_spawn_egg",              500_000.0);
+        // Trial chambers / new
+        m.put("minecraft:breeze_spawn_egg",            1_000_000.0);
+        m.put("minecraft:creaking_spawn_egg",          3_000_000.0);
+        // Bosses — priced so farming is barely profitable after many kills
+        m.put("minecraft:wither_spawn_egg",           50_000_000.0); // nether star 5M/kill → ~10 kills to break even
+        m.put("minecraft:ender_dragon_spawn_egg",    100_000_000.0);
+        m.put("minecraft:warden_spawn_egg",           30_000_000.0);
+        m.put("minecraft:illusioner_spawn_egg",        5_000_000.0);
         // ── Logs (fixed at 2 K to prevent plank-arbitrage) ──────────────────
         // All overworld log variants
         for (String wood : new String[]{"oak","spruce","birch","jungle","acacia","dark_oak",
