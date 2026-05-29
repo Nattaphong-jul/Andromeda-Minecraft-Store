@@ -431,6 +431,139 @@ public class PriceManager {
 
     // -------------------------------------------------------------------------
 
+    // ── BiomesOPlenty compat ──────────────────────────────────────────────────
+
+    private static final Map<String, Double> BOP_ANCHORS = new HashMap<>();
+    static {
+        // Rose quartz (amethyst analogue)
+        BOP_ANCHORS.put("rose_quartz_chunk",          2_000.0);
+        BOP_ANCHORS.put("small_rose_quartz_bud",        500.0);
+        BOP_ANCHORS.put("medium_rose_quartz_bud",     1_000.0);
+        BOP_ANCHORS.put("large_rose_quartz_bud",      1_500.0);
+        BOP_ANCHORS.put("rose_quartz_cluster",         5_000.0);
+        BOP_ANCHORS.put("rose_quartz_block",          18_000.0);
+        // Brimstone (nether material)
+        BOP_ANCHORS.put("brimstone",                  10_000.0);
+        BOP_ANCHORS.put("brimstone_bricks",           12_000.0);
+        BOP_ANCHORS.put("brimstone_brick_slab",        6_000.0);
+        BOP_ANCHORS.put("brimstone_brick_stairs",      9_000.0);
+        BOP_ANCHORS.put("brimstone_brick_wall",        6_000.0);
+        BOP_ANCHORS.put("brimstone_bud",               3_000.0);
+        BOP_ANCHORS.put("brimstone_cluster",           8_000.0);
+        BOP_ANCHORS.put("brimstone_fumarole",          5_000.0);
+        BOP_ANCHORS.put("chiseled_brimstone_bricks",  12_000.0);
+        // Rare mob/creepy drops
+        BOP_ANCHORS.put("flesh",                      20_000.0);
+        BOP_ANCHORS.put("porous_flesh",               15_000.0);
+        BOP_ANCHORS.put("flesh_tendons",              15_000.0);
+        BOP_ANCHORS.put("flesh_tendons_strand",       10_000.0);
+        BOP_ANCHORS.put("hair",                        5_000.0);
+        BOP_ANCHORS.put("spider_egg",                 20_000.0);
+        BOP_ANCHORS.put("glowworm_silk",              10_000.0);
+        BOP_ANCHORS.put("glowworm_silk_strand",        5_000.0);
+        BOP_ANCHORS.put("pus_bubble",                  5_000.0);
+        BOP_ANCHORS.put("webbing",                     5_000.0);
+        BOP_ANCHORS.put("stringy_cobweb",              2_000.0);
+        BOP_ANCHORS.put("hanging_cobweb",              2_000.0);
+        BOP_ANCHORS.put("hanging_cobweb_strand",       1_000.0);
+        // Rare creatures / overworld
+        BOP_ANCHORS.put("eyebulb",                    15_000.0);
+        BOP_ANCHORS.put("wispjelly",                  20_000.0);
+        BOP_ANCHORS.put("lumaloop",                    5_000.0);
+        BOP_ANCHORS.put("lumaloop_plant",              3_000.0);
+        BOP_ANCHORS.put("enderphyte",                 10_000.0);
+        BOP_ANCHORS.put("anomaly",                    50_000.0);
+        BOP_ANCHORS.put("glowshroom",                  1_000.0);
+        BOP_ANCHORS.put("glowshroom_block",            8_000.0);
+        BOP_ANCHORS.put("glowing_moss_block",          2_000.0);
+        BOP_ANCHORS.put("glowing_moss_carpet",           500.0);
+        // Special blocks
+        BOP_ANCHORS.put("null_block",                 30_000.0);
+        BOP_ANCHORS.put("thermal_calcite",             5_000.0);
+        BOP_ANCHORS.put("thermal_calcite_vent",        8_000.0);
+        BOP_ANCHORS.put("origin_grass_block",          5_000.0);
+        BOP_ANCHORS.put("dried_salt",                    500.0);
+        // Fluids
+        BOP_ANCHORS.put("blood_bucket",                5_000.0);
+        BOP_ANCHORS.put("liquid_null_bucket",         10_000.0);
+        // Music disc
+        BOP_ANCHORS.put("music_disc_wanderer",       200_000.0);
+        // Special glowing flowers
+        BOP_ANCHORS.put("glowflower",                  1_000.0);
+        BOP_ANCHORS.put("burning_blossom",             5_000.0);
+        BOP_ANCHORS.put("endbloom",                    5_000.0);
+        BOP_ANCHORS.put("icy_iris",                    1_000.0);
+        BOP_ANCHORS.put("origin_rose",                 2_000.0);
+    }
+
+    /**
+     * Scans the live item registry for all biomesoplenty:* items not yet in prices.json
+     * and adds them with sensible prices. Safe to call on every server start — skips
+     * items that already have a price entry.
+     */
+    public void addBiomesOPlentyItems(MinecraftServer server) {
+        boolean bopLoaded = BuiltInRegistries.ITEM.keySet().stream()
+            .anyMatch(id -> "biomesoplenty".equals(id.getNamespace()));
+        if (!bopLoaded) return;
+
+        JsonObject root = loadRoot();
+        boolean dirty = false;
+
+        for (Item item : BuiltInRegistries.ITEM) {
+            Identifier id = BuiltInRegistries.ITEM.getKey(item);
+            if (id == null || !"biomesoplenty".equals(id.getNamespace())) continue;
+            String key = id.toString();
+            if (prices.containsKey(key)) continue;
+
+            double price = bopPrice(id.getPath());
+            List<String> tags = buildTags(id);
+            addEntry(root, key, price, tags);
+            dirty = true;
+        }
+
+        if (dirty) {
+            saveRoot(root);
+            AndromedaEconomy.LOGGER.info("[AndromedaEconomy] Added BiomesOPlenty items to prices.json");
+        }
+    }
+
+    private static double bopPrice(String path) {
+        if (BOP_ANCHORS.containsKey(path)) return BOP_ANCHORS.get(path);
+        // Stripped logs/wood (check before generic _log/_wood)
+        if (path.startsWith("stripped_") && path.endsWith("_log"))  return 1_800.0;
+        if (path.startsWith("stripped_") && path.endsWith("_wood")) return 1_800.0;
+        // Standard wood set
+        if (path.endsWith("_log") || path.endsWith("_wood"))        return 2_000.0;
+        if (path.endsWith("_planks"))                               return 500.0;
+        if (path.endsWith("_fence_gate"))                           return 2_000.0;
+        if (path.endsWith("_fence"))                                return 600.0;
+        if (path.endsWith("_slab"))                                 return 250.0;
+        if (path.endsWith("_stairs"))                               return 750.0;
+        if (path.endsWith("_door"))                                 return 1_000.0;
+        if (path.endsWith("_trapdoor"))                             return 1_500.0;
+        if (path.endsWith("_button"))                               return 100.0;
+        if (path.endsWith("_pressure_plate"))                       return 200.0;
+        if (path.endsWith("_hanging_sign"))                         return 1_000.0;
+        if (path.endsWith("_sign"))                                 return 1_000.0;
+        if (path.endsWith("_chest_boat"))                           return 4_000.0;
+        if (path.endsWith("_boat"))                                 return 2_000.0;
+        if (path.endsWith("_shelf"))                                return 1_500.0;
+        if (path.endsWith("_leaves"))                               return 100.0;
+        if (path.endsWith("_sapling"))                              return 500.0;
+        if (path.endsWith("_leaf_litter"))                          return 500.0;
+        // Flower petal blocks (crafted decoration)
+        if (path.endsWith("_flower_petal_block"))                   return 2_000.0;
+        // Potted plants (display items)
+        if (path.startsWith("potted_"))                             return 500.0;
+        // Sandstone variants
+        if (path.contains("sandstone"))                             return 500.0;
+        if (path.endsWith("_sand"))                                 return 50.0;
+        // Glowing blocks
+        if (path.startsWith("glowing_"))                            return 2_000.0;
+        // Default — covers remaining flowers, grasses, misc plants
+        return 2_000.0;
+    }
+
     private double enchantmentPrice(int weight) {
         if (weight >= 10) return rng(50_000,      200_000);
         if (weight >= 5)  return rng(200_000,    1_000_000);
