@@ -307,7 +307,7 @@ public class PriceManager {
         }
         if (!prices.containsKey("ae:speed_hopper")) {
             JsonObject root = loadRoot();
-            addEntry(root, "ae:speed_hopper", 1_000_000.0,
+            addEntry(root, "ae:speed_hopper", 7_500.0,
                 List.of("speed", "hopper", "fast", "transfer", "10"));
             saveRoot(root);
         }

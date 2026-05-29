@@ -157,21 +157,15 @@ public class AndromedaEconomy implements ModInitializer {
             return true;
         });
 
-        // Speed Hopper — return custom item (with glint + name) when broken
+        // Speed Hopper — drop custom item when broken (vanilla drop behaviour)
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
             if (!(blockEntity instanceof IAeSpeedHopper sh) || !sh.ae$isSpeedHopper()) return true;
             if (!(level instanceof net.minecraft.server.level.ServerLevel sl)) return true;
-            // Remove block without vanilla drops, play break effect, give our item
-            sl.removeBlock(pos, false);
-            sl.levelEvent(2001, pos, net.minecraft.world.level.block.Block.getId(state));
-            net.minecraft.world.item.ItemStack item = SpeedHopperItem.create();
-            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
-                if (!sp.getInventory().add(item)) {
-                    net.minecraft.world.level.block.Block.popResource(sl, pos, item);
-                }
-            } else {
-                net.minecraft.world.level.block.Block.popResource(sl, pos, item);
-            }
+            // destroyBlock(pos, false, player) removes the block AND plays the break
+            // effect exactly once — avoids the double-visual from removeBlock+levelEvent.
+            sl.destroyBlock(pos, false, player);
+            // Drop the Speed Hopper item on the ground (vanilla-style)
+            net.minecraft.world.level.block.Block.popResource(sl, pos, SpeedHopperItem.create());
             return false; // cancel vanilla break so it doesn't drop a plain hopper
         });
 

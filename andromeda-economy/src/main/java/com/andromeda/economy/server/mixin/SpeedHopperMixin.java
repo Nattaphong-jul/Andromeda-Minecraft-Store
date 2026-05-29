@@ -19,18 +19,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.function.BooleanSupplier;
 
 /**
- * Speed Hopper: transfers 10 items per cycle.
+ * Speed Hopper: transfers 10 items per cycle (both in and out).
  *
- * ROOT CAUSE of all previous failures:
- *   Every @Inject and @Shadow used remap=false. Fabric Loom remaps compiled
- *   mod bytecode from Mojang names → Intermediary before shipping the JAR.
- *   At runtime, Fabric loads Intermediary-named bytecode. With remap=false,
- *   Mixin matched "loadAdditional" against Intermediary names like "m_11008_"
- *   and found nothing — injections silently never fired.
- *
- *   Fix: remove remap=false everywhere. Loom writes a refmap.json at build
- *   time that maps Mojang names → Intermediary. Mixin uses that refmap at
- *   runtime and correctly resolves all targets.
+ * Root cause of all v1.7.x failures:
+ *   SpeedHopperMixin was listed under "server" in the mixin config.
+ *   In singleplayer Mixin runs Env=CLIENT and skips the "server" section.
+ *   Fix: moved to "mixins" section (all environments).
  */
 @Mixin(value = HopperBlockEntity.class, priority = 2000)
 public abstract class SpeedHopperMixin implements IAeSpeedHopper {
@@ -56,21 +50,22 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
     @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void ae$load(ValueInput input, CallbackInfo ci) {
         ae_speedHopper = input.getBooleanOr(SpeedHopperItem.FLAG, false);
-        com.andromeda.economy.AndromedaEconomy.LOGGER.info(
-            "[SpeedHopperDEBUG] loadAdditional fired — flag={}", ae_speedHopper);
     }
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
     private void ae$save(ValueOutput output, CallbackInfo ci) {
-        if (ae_speedHopper) {
-            output.putBoolean(SpeedHopperItem.FLAG, true);
-            com.andromeda.economy.AndromedaEconomy.LOGGER.info(
-                "[SpeedHopperDEBUG] saveAdditional wrote flag=true");
-        }
+        if (ae_speedHopper) output.putBoolean(SpeedHopperItem.FLAG, true);
     }
 
     // ── Speed logic ───────────────────────────────────────────────────────────
 
+    /**
+     * Handles 10 ejects AND 10 suck-ins per cycle for Speed Hoppers.
+     *
+     * Doing both in one cycle prevents the "only first slot fills" issue:
+     * without also speeding up suck-in, items cycle through slot 0 only
+     * because they are ejected faster than they fill other slots.
+     */
     @Inject(method = "tryMoveItems", at = @At("HEAD"), cancellable = true)
     private static void ae$onTryMoveItems(Level level, BlockPos pos, BlockState state,
             HopperBlockEntity hopper, BooleanSupplier bs,
@@ -78,22 +73,33 @@ public abstract class SpeedHopperMixin implements IAeSpeedHopper {
         IAeSpeedHopper sh = (IAeSpeedHopper) hopper;
         if (!sh.ae$isSpeedHopper()) return;
 
-        com.andromeda.economy.AndromedaEconomy.LOGGER.info(
-            "[SpeedHopperDEBUG] tryMoveItems fired on SPEED hopper at {}", pos);
-
         if (cir.isCancelled()) {
+            // Another mod (e.g. HopperTheHedgehog) already ran — add 9 more ejects
             for (int i = 0; i < 9; i++) {
                 if (!ejectItems(level, pos, hopper)) break;
+            }
+            // Also speed up suck-in
+            for (int i = 0; i < 9; i++) {
+                if (!bs.getAsBoolean()) break;
             }
             return;
         }
 
         boolean moved = false;
+
+        // Eject up to 10 items into the container below
         for (int i = 0; i < 10; i++) {
             if (!ejectItems(level, pos, hopper)) break;
             moved = true;
         }
-        if (!moved) return;
+
+        // Suck in up to 10 items from the container above
+        for (int i = 0; i < 10; i++) {
+            if (!bs.getAsBoolean()) break;
+            moved = true;
+        }
+
+        if (!moved) return; // nothing happened — let vanilla handle it
 
         sh.ae$setCooldown(HopperBlockEntity.MOVE_ITEM_SPEED);
         cir.setReturnValue(true);
