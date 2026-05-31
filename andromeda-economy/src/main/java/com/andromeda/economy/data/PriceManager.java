@@ -48,9 +48,9 @@ public class PriceManager {
         m.put("minecraft:amethyst_shard",    2_000.0);
         m.put("minecraft:diamond",           100_000.0);
         m.put("minecraft:emerald",           80_000.0);
-        m.put("minecraft:netherite_ingot",   1_000_000.0);
-        m.put("minecraft:netherite_scrap",   235_000.0); // (ingot−4×gold)/4
-        m.put("minecraft:ancient_debris",    235_000.0); // 1:1 → scrap
+        m.put("minecraft:netherite_ingot",   1_500_000.0);  // +50%
+        m.put("minecraft:netherite_scrap",     352_500.0);  // +50%
+        m.put("minecraft:ancient_debris",      352_500.0);  // +50%
         m.put("minecraft:elytra",           10_000_000.0);
         m.put("minecraft:spawner",          40_000_000.0);
         m.put("minecraft:dragon_egg",        50_000_000.0);
@@ -76,7 +76,19 @@ public class PriceManager {
         m.put("minecraft:amethyst_block",    18_000.0);
         m.put("minecraft:diamond_block",     900_000.0);
         m.put("minecraft:emerald_block",     720_000.0);
-        m.put("minecraft:netherite_block",   9_000_000.0);
+        m.put("minecraft:netherite_block",  13_500_000.0);  // +50%
+        // ── Netherite tools & armor (+50%, spear fixed to match tools) ────────
+        m.put("minecraft:netherite_sword",      14_147_594.0);
+        m.put("minecraft:netherite_pickaxe",     8_807_087.0);
+        m.put("minecraft:netherite_axe",         9_768_632.0);
+        m.put("minecraft:netherite_shovel",     11_245_373.0);
+        m.put("minecraft:netherite_hoe",         5_363_438.0);
+        m.put("minecraft:netherite_helmet",     13_563_955.0);
+        m.put("minecraft:netherite_chestplate",  4_681_448.0);
+        m.put("minecraft:netherite_leggings",    5_267_795.0);
+        m.put("minecraft:netherite_boots",      14_574_601.0);
+        m.put("minecraft:netherite_horse_armor",     7_090.0);
+        m.put("minecraft:netherite_spear",       8_000_000.0); // fixed: was ~2,437 (unpriced)
         // ── Ores (≈ 0.9× material; deepslate +5% for depth) ─────────────────
         m.put("minecraft:coal_ore",                500.0);
         m.put("minecraft:deepslate_coal_ore",      530.0);
@@ -311,7 +323,46 @@ public class PriceManager {
                 List.of("speed", "hopper", "fast", "transfer", "10"));
             saveRoot(root);
         }
+        updateNetheritePrice();
     }
+
+    /**
+     * Patches prices.json so netherite items reflect the +50% price increase.
+     * Only updates entries whose price differs from the anchor — safe to call
+     * every startup (idempotent after the first run).
+     */
+    private void updateNetheritePrice() {
+        // All netherite-related items that now have anchor prices
+        Set<String> netheriteKeys = Set.of(
+            "minecraft:netherite_ingot", "minecraft:netherite_scrap",
+            "minecraft:ancient_debris",  "minecraft:netherite_block",
+            "minecraft:netherite_sword", "minecraft:netherite_pickaxe",
+            "minecraft:netherite_axe",   "minecraft:netherite_shovel",
+            "minecraft:netherite_hoe",   "minecraft:netherite_helmet",
+            "minecraft:netherite_chestplate", "minecraft:netherite_leggings",
+            "minecraft:netherite_boots", "minecraft:netherite_horse_armor",
+            "minecraft:netherite_spear"
+        );
+
+        boolean dirty = false;
+        JsonObject root = loadRoot();
+
+        for (String key : netheriteKeys) {
+            double anchor = ANCHORS.getOrDefault(key, -1.0);
+            if (anchor <= 0) continue;
+            PriceEntry current = prices.get(key);
+            if (current != null && current.price == anchor) continue; // already correct
+            List<String> tags = buildTags(net.minecraft.resources.Identifier.parse(key));
+            addEntry(root, key, anchor, tags);
+            dirty = true;
+        }
+
+        if (dirty) {
+            saveRoot(root);
+            AndromedaEconomy.LOGGER.info("[AndromedaEconomy] Updated netherite item prices (+50%)");
+        }
+    }
+
 
     private void generate() {
         FILE.getParentFile().mkdirs();
@@ -718,16 +769,41 @@ public class PriceManager {
     }
 
     /**
-     * Items that sell at full buy price (no 15 % discount).
-     * Gold: fixed at 60 K, no discount by design.
-     * Bitcoin (command_block): market price, always buy = sell.
+     * Items that sell at full buy price with NO rank deduction.
+     * Only Gold Ingot, Gold Block, and Bitcoin. All other gold variants
+     * (nugget, raw, ores) are now subject to rank-based deduction.
      */
     private static final Set<String> NO_DISCOUNT = Set.of(
-        "minecraft:gold_ingot", "minecraft:gold_block", "minecraft:gold_nugget",
-        "minecraft:raw_gold", "minecraft:gold_ore",
-        "minecraft:deepslate_gold_ore", "minecraft:nether_gold_ore",
+        "minecraft:gold_ingot",
+        "minecraft:gold_block",
         "minecraft:command_block"   // Bitcoin — market rate, no spread
     );
+
+    /**
+     * Sell basis for netherite items is locked at pre-50%-increase prices.
+     * Buy price rose 50% but sell price stays at the old value — prevents
+     * windfall for players who stocked netherite before the patch.
+     */
+    private static final Map<String, Double> NETHERITE_SELL_BASE;
+    static {
+        Map<String, Double> s = new LinkedHashMap<>();
+        s.put("minecraft:netherite_ingot",       1_000_000.0);
+        s.put("minecraft:netherite_scrap",          235_000.0);
+        s.put("minecraft:ancient_debris",           235_000.0);
+        s.put("minecraft:netherite_block",        9_000_000.0);
+        s.put("minecraft:netherite_sword",        9_431_729.0);
+        s.put("minecraft:netherite_pickaxe",      5_871_391.0);
+        s.put("minecraft:netherite_axe",          6_512_421.0);
+        s.put("minecraft:netherite_shovel",       7_496_915.0);
+        s.put("minecraft:netherite_hoe",          3_575_626.0);
+        s.put("minecraft:netherite_helmet",       9_042_637.0);
+        s.put("minecraft:netherite_chestplate",   3_120_965.0);
+        s.put("minecraft:netherite_leggings",     3_511_863.0);
+        s.put("minecraft:netherite_boots",        9_716_401.0);
+        s.put("minecraft:netherite_horse_armor",      4_727.0);
+        // Spear was mispriced before, so it uses the new price as its sell basis
+        NETHERITE_SELL_BASE = Collections.unmodifiableMap(s);
+    }
 
     /**
      * Returns the sell price for an actual ItemStack, handling special cases
@@ -801,12 +877,15 @@ public class PriceManager {
      * Gold/Bitcoin are unaffected (market price, no spread).
      */
     public double getSellPriceByRank(String itemId, double balance) {
-        double buy = getBuyPrice(itemId);
-        if (buy <= 0) return -1;
         if (itemId.endsWith("_spawn_egg")) return SPAWN_EGG_SELL_PRICE;
-        if (NO_DISCOUNT.contains(itemId)) return buy;
+        // Netherite sell basis is locked at pre-increase prices
+        double sellBasis = NETHERITE_SELL_BASE.containsKey(itemId)
+            ? NETHERITE_SELL_BASE.get(itemId)
+            : getBuyPrice(itemId);
+        if (sellBasis <= 0) return -1;
+        if (NO_DISCOUNT.contains(itemId)) return sellBasis;
         double deduction = rankSellDeduction(com.andromeda.economy.RankManager.rankName(balance));
-        return buy * (1.0 - deduction);
+        return sellBasis * (1.0 - deduction);
     }
 
     public double getSellPriceForStackByRank(ItemStack stack, double balance) {
