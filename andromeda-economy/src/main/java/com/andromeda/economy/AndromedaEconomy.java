@@ -242,14 +242,17 @@ public class AndromedaEconomy implements ModInitializer {
     /**
      * Sends SELL prices (already discounted correctly) to a client-mod player.
      * Using sell prices means the client never needs to know about NO_DISCOUNT —
-     * gold and Bitcoin arrive with their full price, regular items at 85%.
+     * Sell prices are rank-adjusted per player — no client reinstall needed,
+     * the client mod just displays whatever sell prices the server sends.
      */
     public static void sendPriceMap(ServerPlayer player) {
+        com.andromeda.economy.data.PlayerData pd = db.getPlayer(player.getStringUUID());
+        double balance = pd != null ? pd.balance : 0;
         Map<String, Double> data = new HashMap<>();
         for (Item item : BuiltInRegistries.ITEM) {
             Identifier id = BuiltInRegistries.ITEM.getKey(item);
             if (id == null) continue;
-            double sell = prices.getSellPrice(id.toString());
+            double sell = prices.getSellPriceByRank(id.toString(), balance);
             if (sell > 0) data.put(id.toString(), sell);
         }
         ServerPlayNetworking.send(player, new PriceMapPayload(data));
