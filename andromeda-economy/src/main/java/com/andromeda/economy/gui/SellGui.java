@@ -1,6 +1,7 @@
 package com.andromeda.economy.gui;
 
 import com.andromeda.economy.AndromedaEconomy;
+import com.andromeda.economy.data.PlayerData;
 import com.andromeda.economy.EconomyUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -90,12 +91,15 @@ public class SellGui extends ChestMenu {
         double total = 0.0;
         boolean hadSellable = false;
 
+        PlayerData pData = AndromedaEconomy.db.getPlayer(sp.getStringUUID());
+        double balance = pData != null ? pData.balance : 0;
+
         for (int i = 0; i < SELL_SLOTS; i++) {
             ItemStack stack = inv.getItem(i);
             if (stack.isEmpty()) continue;
 
-            // getTotalSellValue handles shulker box contents automatically
-            double totalValue = AndromedaEconomy.prices.getTotalSellValue(stack);
+            // Rank-adjusted sell prices: higher rank = larger deduction
+            double totalValue = AndromedaEconomy.prices.getTotalSellValueByRank(stack, balance);
 
             if (totalValue > 0) {
                 total += totalValue;

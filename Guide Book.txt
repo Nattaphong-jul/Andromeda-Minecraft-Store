@@ -6,9 +6,10 @@
  
          Content
 
-Command List      2 - 7
+Command List    2 - 11
 
-Ranking System   8 - 9 
+Ranking         12 - 14
+
 
 ====================================
 ====== Shop =======
@@ -47,11 +48,15 @@ That's it :)
 == Player Balance ==
 
 /balance [name]
+/bal [name]
 
 
 ----- Example ------
 
 /balance isayes2002
+/bal Mai9099
+
+** Asset will not be shown
 
 ===================================
 ==== Night Vision ====
@@ -79,6 +84,64 @@ ON and OFF
 /home list
 
 ==================================
+= Teleport to Player =
+
+/tpa [player]
+
+----- Example ------
+
+\tpa Lollipop9099
+
+**Other player MUST accept the TP using:
+
+/tpaccept
+
+=================================
+== Teleport to Me ==
+
+/tpahere [player]
+
+----- Example ------
+
+/tpahere Lollipop9099
+
+**Other player MUST accept the TP using:
+
+/tpaccept
+
+==================================
+====== Asset =======
+
+/asset
+
+Open Ender Chest from anywhere
+
+The item in the Ender Chest will be calculate as Asset
+
+====================================
+===== Lottery ======
+
+/lottery
+/lot
+
+
+Lottery result will be shown every 24 hours
+
+Your lottery will be kept at "Redeem" page
+
+==================================
+
+
+
+
+
+
+      Ranking System
+
+
+
+=================================
+
 Rank               Money
 ===================
 
@@ -100,3 +163,16 @@ CK:                    10B
 Jensen Huang:    100B
 
 Elon Musk:        >500B
+
+FED:                   >1T
+
+======================================
+====== Other =======
+
+- Keepinventory True
+
+- Killing player earn 5% of their money
+
+- Selling price will be deducted 15% from buy price
+
+- Bitcoin (BTC) and Gold selling price will not be deducted

@@ -775,6 +775,69 @@ public class PriceManager {
         return NO_DISCOUNT.contains(itemId) ? buy : buy * 0.85;
     }
 
+    // ── Rank-based selling ────────────────────────────────────────────────────
+
+    /** All spawn eggs sell for this fixed price regardless of rank or buy price. */
+    public static final double SPAWN_EGG_SELL_PRICE = 100_000.0;
+
+    /** Returns the deduction rate (0–1) for the given rank. */
+    public static double rankSellDeduction(String rank) {
+        return switch (rank) {
+            case "Unemployed", "Salary Man" -> 0.05;
+            case "Anutin"       -> 0.15;
+            case "CEO"          -> 0.30;
+            case "MrBeast"      -> 0.50;
+            case "CK"           -> 0.60;
+            case "Jensen Huang" -> 0.70;
+            case "Elon Musk"    -> 0.80;
+            case "FED", "Cheater" -> 0.90;
+            default -> 0.15;
+        };
+    }
+
+    /**
+     * Rank-adjusted sell price for a given item and player balance.
+     * Spawn eggs always sell for SPAWN_EGG_SELL_PRICE (100K).
+     * Gold/Bitcoin are unaffected (market price, no spread).
+     */
+    public double getSellPriceByRank(String itemId, double balance) {
+        double buy = getBuyPrice(itemId);
+        if (buy <= 0) return -1;
+        if (itemId.endsWith("_spawn_egg")) return SPAWN_EGG_SELL_PRICE;
+        if (NO_DISCOUNT.contains(itemId)) return buy;
+        double deduction = rankSellDeduction(com.andromeda.economy.RankManager.rankName(balance));
+        return buy * (1.0 - deduction);
+    }
+
+    public double getSellPriceForStackByRank(ItemStack stack, double balance) {
+        if (stack.getItem() == Items.FIREWORK_ROCKET) {
+            Fireworks fw = stack.get(DataComponents.FIREWORKS);
+            if (fw != null) {
+                double p = getSellPriceByRank("firework_rocket:" + fw.flightDuration(), balance);
+                if (p > 0) return p;
+            }
+        }
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id != null ? getSellPriceByRank(id.toString(), balance) : -1;
+    }
+
+    /** Rank-adjusted total sell value including shulker box contents. */
+    public double getTotalSellValueByRank(ItemStack stack, double balance) {
+        double ownPrice = getSellPriceForStackByRank(stack, balance);
+        double ownValue = ownPrice > 0 ? ownPrice * stack.getCount() : 0;
+
+        ItemContainerContents contents = stack.get(DataComponents.CONTAINER);
+        if (contents == null) return ownValue;
+
+        double contentsValue = contents.nonEmptyItemCopyStream()
+            .mapToDouble(inner -> {
+                double p = getSellPriceForStackByRank(inner, balance);
+                return p > 0 ? p * inner.getCount() : 0;
+            })
+            .sum();
+        return ownValue + contentsValue;
+    }
+
     private static final List<String> BITCOIN_TAGS = List.of("bitcoin", "btc", "crypto", "command", "block");
 
     /** Seeds the in-memory Bitcoin entry on startup (before first API call). */

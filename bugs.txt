@@ -1,0 +1,24 @@
+Selling Price deducting value will be depending on the rank:
+- Unemployed 5%
+- Salary Man 5%
+- Anutin 15%
+- CEO 30%
+- MrBeast 50%
+- CK 60%
+- Jensen Huang 70%
+- Elon Musk 80%
+- FED and above 90%
+
+The ALL mob egg selling price will be deducted to 100K ONLY. The buying price stayed the same. Keep in mind that this exclude the all type of chicken eggs (not spawning egg)
+
+After this, can you list all the item that we increase the price in the past?
+
+Question before implementing:
+Now there is two side of mods right? Client side and Server side. The mod can be use for the server side
+only but there will be a problem with item stacking and total price calculating of stacked item, right?
+So if client-side have mod from v1.5.0, and the price update, it will take effect with them too right?
+(I know the item calculate in serverside but the displaying price will be incorrect on their end)
+If I change something with the price as above, will they take effect? Or they have to install the mod for client side again?
+Also, how the pricing on client side communicate with the server-side?
+
+Any unsure question, you can ask me.

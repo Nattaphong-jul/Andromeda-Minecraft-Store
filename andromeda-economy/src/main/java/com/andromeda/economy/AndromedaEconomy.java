@@ -342,7 +342,9 @@ public class AndromedaEconomy implements ModInitializer {
             Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (id == null) continue;
 
-            double sellPrice = prices.getSellPrice(id.toString());
+            com.andromeda.economy.data.PlayerData pd = db.getPlayer(player.getStringUUID());
+            double balance = pd != null ? pd.balance : 0;
+            double sellPrice = prices.getSellPriceByRank(id.toString(), balance);
             if (sellPrice <= 0) continue;
 
             String loreText = EconomyUtils.compact(sellPrice) + " THB";
