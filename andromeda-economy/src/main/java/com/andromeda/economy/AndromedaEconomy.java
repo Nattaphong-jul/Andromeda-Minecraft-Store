@@ -179,9 +179,12 @@ public class AndromedaEconomy implements ModInitializer {
 
         ServerLivingEntityEvents.AFTER_DEATH.register((LivingEntity entity, DamageSource src) -> {
             if (entity instanceof ServerPlayer victim) {
-                // PvP: killer steals 10 % of victim's balance
                 if (src.getEntity() instanceof ServerPlayer killer && !killer.getUUID().equals(victim.getUUID())) {
+                    // PvP — killer steals from victim (existing behaviour)
                     handlePvpKill(killer, victim);
+                } else {
+                    // Non-PvP death (mob, fall, fire, lava, void, etc.) — 2.4% penalty
+                    handleEnvironmentalDeath(victim);
                 }
                 return;
             }
@@ -324,6 +327,23 @@ public class AndromedaEconomy implements ModInitializer {
 
         playMoneySound(killer);
         hud.update(killer);
+        hud.update(victim);
+    }
+
+    /** Deducts 2.4 % on non-PvP death (mob, fall, fire, etc.). */
+    private static void handleEnvironmentalDeath(ServerPlayer victim) {
+        PlayerData data = db.getPlayer(victim.getStringUUID());
+        if (data == null || data.balance < 1) return;
+
+        double lost = Math.floor(data.balance * 0.024);
+        if (lost < 1) return;
+
+        db.setBalance(victim.getStringUUID(), Math.max(0, data.balance - lost));
+        victim.sendSystemMessage(
+            Component.literal("☠ You lost ").withStyle(ChatFormatting.RED)
+                .append(Component.literal(EconomyUtils.compact(lost) + " THB").withStyle(ChatFormatting.YELLOW))
+                .append(Component.literal(" (2.4% death penalty)").withStyle(ChatFormatting.RED))
+        );
         hud.update(victim);
     }
 
